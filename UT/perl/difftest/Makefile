@@ -56,7 +56,7 @@ SHELL        :=/bin/bash
 
 # Reference code directory
 ifndef CODE_REF
- CODE_REF    :=CODE_REF_PATH
+ CODE_REF    :=$(HOME)/GC/Code.GC
 endif
 
 # Development code directory
