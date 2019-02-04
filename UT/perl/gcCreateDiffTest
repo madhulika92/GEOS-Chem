@@ -1,0 +1,718 @@
+#!/usr/bin/perl -w
+
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !MODULE: gcCreateDiffTest
+#
+# !DESCRIPTION: This perl script is used to copy GEOS-Chem run directories
+#  from various GEOS-Chem unit tester run directories to create one or more
+#  DiffTest directories. This is quick way to generate DiffTest directories 
+#  for many types of GEOS-Chem simulations.
+#\\
+#\\
+# !USES:
+#
+require 5.003;                       # Need this version of Perl or newer
+use English;                         # Use English language
+use Carp;                            # Get detailed error messages
+use strict;
+use FindBin qw/$RealBin/;            # Look for perl modules
+use lib        $RealBin;             #  in the current folder
+use Dates   qw/&getLocalTime/;       # Get routines from module Dates.pm
+use UtUtils qw/&baseName
+               &checkDir
+               &makeHemcoCfg
+               &makeInputGeos
+               &makeHistoryRc
+               &parse/;              # Get routines from module UtUtils.pm
+#
+# !PUBLIC DATA MEMBERS:
+#
+our $COPY_CMD   = "";                # Command to copy directories
+our $COPY_PATH  = "";                # Path to copy Run directories to
+our $CODE_REF   = "";                # Path to reference code (REF)
+our $CODE_DEV   = "";                # Path to development code (DEV)
+our $DATA_ROOT  = "";                # Root path for GEOS-Chem data directory
+our $DESCRIBE   = "";                # Short description of unit tests
+our $JOB_DIR    = "";                # Unit Test job directory
+our $LOG_DIR    = "";                # Unit Test logs directory
+our $RUN_ROOT   = "";                # Unit Test top-level run directory
+our $RUN_DIR    = "";                # Unit Test run directory subdirectory
+our $UT_ROOT    = "";                # Unit Test root directory
+our $WEB_GRID   = "";                # Web page w/ unit text matrix
+our $WEB_PUSH   = "";                # Remote server for web page push
+our $VERSION    = "";                # GEOS-Chem version ID
+our $VERBOSE    = "0";               # Verbose setting (0-3)
+our $WARNINGS   = "1";               # Warnings setting (0-3) 
+
+#		
+# !PUBLIC MEMBER FUNCTIONS:
+#  &main()     : Driver routine for gcCreateDiffTest
+#
+# !PRIVATE MEMBER FUNCTIONS:
+#  &getRunDir  : Returns the name of the GEOS-Chem run directory
+#  &makeInputs : Creates the input.geos file the run directory 
+#  &doCopyDirs : Reads user options from a file and starts the copy process
+#
+# !CALLING SEQUENCE:
+#  gcCopyRunDirs [ OPTIONS-FILENAME ] [ DRYRUN ]
+#
+# !REMARKS:
+#  If no value is passed for OPTIONS-FILENAME, then gcCreateDiffTest will
+#  read user options from the input file: "UnitTest.input".
+#
+# !REVISION HISTORY: 
+#  02 Oct 2015 - E. Lundgren - Initial version, based on gcCopyRunDirs
+#  30 Aug 2018 - M. Sulprizio- Remove $HEMCO_ROOT; Now pass $DATA_ROOT to
+#                              makeHemcoCfg instead
+#EOP
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: getRunDir
+#
+# !DESCRIPTION: Returns the run directory name for a given combination
+#  of met field, grid, simulation type, and nested-grid type.
+#\\
+#\\
+# !INTERFACE:
+#
+sub getRunDir($$$$) {
+#
+# !INPUT PARAMETERS:
+#
+  # $met  : Met field type
+  # $grid : Horiziontal grid
+  # $nest : Nested grid option (if necessary)
+  # $sim  : Simulation type
+  my ( $met, $grid, $nest, $sim ) = @_;
+#
+# !RETURN VALUE:
+#
+  my $runDir = ""; 
+#
+# !CALLING SEQUENCE:
+#  &doUnitTest( "UnitTest.input" );
+#
+# !REVISION HISTORY:
+#  02 Oct 2015 - E. Lundgren - Initial version, based on gcCopyRunDirs
+#  13 Jul 2016 - M. Sulprizio- Modify runLoc for consolidated run directories
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+#
+# !LOCAL VARIABLES:
+#
+  # Run directory string
+  my $runLoc = "";
+
+  if ( length( $nest ) > 0 ) {
+    $runLoc = "{MET}_{GRID}_{SIM}_{NEST}";
+  } else {
+    $runLoc = "{GRID}_{SIM}";
+  }
+
+  # Replace tokens
+  $runLoc =~ s/{MET}/$met/g;
+  $runLoc =~ s/{GRID}/$grid/g;
+  $runLoc =~ s/{SIM}/$sim/g;
+  $runLoc =~ s/{NEST}/$nest/g;
+  $runDir = "$RUN_DIR";
+  $runDir =~ s/{RUNDIR}/$runLoc/g;
+
+  # Return the run directory
+  return( $runDir );
+}
+#EOP
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: makeInputs
+#
+# !DESCRIPTION: Creates the input.geos and HEMCO_Config.rc files from the 
+#  template files, replacing some tokens to customize them for the given 
+#  simulation.
+#\\
+#\\
+# !INTERFACE:
+#
+sub makeInputs($$$$$$$$) {
+#
+# !INPUT PARAMETERS:
+#
+  # $start  : Start date of test simulation (YYYYMMDDhh                )
+  # $end    : End   date of test simulation (YYYYMMDDhh or YYYYMMDDhhmm)
+  # $runDir : Run directory
+  my ( $start, $end, $runDir, $met, $grid, $nest, $sim ) = @_;
+#
+# !CALLING SEQUENCE:
+#  &makeInputFiles( $start, $end, $runDir );
+#
+# !REVISION HISTORY:
+#  02 Oct 2015 - E. Lundgren - Initial version, based on gcCopyRunDirs
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+#
+# !LOCAL VARIABLES:
+#
+  # Strings
+  my $d0       = "";
+  my $h0       = "";
+  my $d1       = "";
+  my $h1       = "";
+  my $inpTmpl  = "$runDir/input.geos.template";
+  my $inpGeos  = "$runDir/input.geos";
+  my $hcoTmpl  = "$runDir/HEMCO_Config.template";
+  my $hcoCfg   = "$runDir/HEMCO_Config.rc";
+  my $histTmpl = "$runDir/HISTORY.rc.template";
+  my $histRc   = "$runDir/HISTORY.rc";
+  my $errMsg   = "makeInputs: END must be YYYYMMDDhh or YYYYMMDDhhmm!";
+  my $hcoEnd   = ""; 
+
+  # Get start date and hour
+  $d0          = substr( $start, 0, 8 );
+  $h0          = substr( $start, 8, 2 );
+  $h0         .= "0000";
+
+  # Get end date and hour
+  $d1          = substr( $end,   0, 8 );
+
+  # Compute the ending hour (hhmmss) from the ending string, 
+  # which may be in either YYYYMMDDhhmm or YYYYMMDDhh format
+  if    ( length( $end ) == 12 ) { $h1 = substr( $end, 8, 4 ) . "00";   } 
+  elsif ( length( $end ) == 10 ) { $h1 = substr( $end, 8, 2 ) . "0000"; }
+  else                           { print "$errMsg\n"; exit(1);          }
+
+  # Make the input.geos file in the run directory
+  &makeInputGeos( $d0, $h0, $d1, $h1, $met, $DATA_ROOT, $inpTmpl, $inpGeos );
+
+  # Make the HEMCO_Config.rc file in the run directory
+  &makeHemcoCfg( $hcoTmpl, $start,   $met,      $grid,       $nest,    
+                 $sim,     $VERBOSE, $WARNINGS, $DATA_ROOT, $hcoCfg );
+
+  # Make the HISTORY.rc file in the run directory
+  if ( -f $histTmpl ) {
+    &makeHistoryRc( $histTmpl, $d0, $h0, $d1, $h1, $histRc );
+  }
+
+  # Return 
+  return( $? );
+}
+#EOP
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: replaceText
+#
+# !DESCRIPTION: Replaces text in a text file
+#\\
+#\\
+# !INTERFACE:
+#
+sub replaceText($$$) {
+#
+# !INPUT PARAMETERS:
+#
+  # $file : Filename
+  # $old  : Old text to be replaced
+  # $new  : New text to insert
+  my ( $file, $old, $new ) = @_;
+#
+# !CALLING SEQUENCE:
+#  &replaceText( "$COPY_DIR/summarizeDiff.sh", "START_DATE", "$start" );
+#
+# !REVISION HISTORY:
+#  05 Oct 2015 - E. Lundgren - Initial version
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+#
+# !LOCAL VARIABLES:
+#
+  # Arrays
+  my @newlines= ();
+  my @lines   = ();
+
+  # Open file and put lines in array @lines
+  open(FILE, "<$file") || die "File not found";
+  @lines = <FILE>;
+  close(FILE);
+
+  # Loop over lines, replacing old text if it is there
+  foreach(@lines) {
+    $_ =~ s/$old/$new/g;
+    push(@newlines,$_);
+  }
+
+  # Write new text to file
+  open(FILE, ">$file") || die "File not found";
+  print FILE @newlines;
+  close(FILE);
+
+  # Return
+  return( 0 );
+}
+#EOP
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: doCopyDirs
+#
+# !DESCRIPTION: Copies DiffTest-specific files and directories (Dev and Ref)
+#  from UnitTest/difftest to the path specified by $COPY_PATH. Reads the 
+#  input file name (containing user-specified options) and copies the selected 
+#  run directory to the Dev subdirectory. Generates the input.geos and
+#  HEMCO_Config.rc files appropriate to each run directory. Creates a Ref 
+#  subdirectory with symbolic links to files in the Dev subdirectory. 
+#\\
+#\\
+# !INTERFACE:
+#
+sub doCopyDirs($$) {
+#
+# !INPUT PARAMETERS:
+#
+  # $fileName : File in which unit test options are listed
+  # $dryRun   : If =1, will set up input files, but not copy files
+  my ( $fileName, $dryRun ) = @_;
+#
+# !CALLING SEQUENCE:
+#  &doUnitTest( $fileName );
+#
+# !REVISION HISTORY:
+#  02 Sep 2015 - E. Lundgren - Initial version, based on gcCopyRunDirs
+#  09 Dec 2015 - R. Yantosca - Link the HEMCO_restart file in the $refDir
+#                              to $devDir.  This makes sure the runs start
+#                              with the same initial conditions.  
+#  18 Dec 2015 - R. Yantosca - Add $UT_ROOT global variable
+#  18 Dec 2015 - R. Yantosca - Replace ~ in $COPY_PATH with home directory
+#  23 Aug 2016 - R. Yantosca - Bug fix: Replace {HOME} in $HEMCO_ROOT
+#  13 Sep 2016 - M. Sulprizio- Replace text in new PlotDiff.input file
+#  12 Apr 2017 - R. Yantosca - Now replace {VERSION} in $COPY_PATH variable
+#  03 May 2017 - R. Yantosca - Bug fix: remove spaces from directory paths
+#  21 Sep 2017 - R. Yantosca - Now link to the HISTORY.rc file in Dev/
+#  03 May 2018 - R. Yantosca - Now also links to HEMCO_Diagn.rc file in Dev/
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+#
+# !LOCAL VARIABLES:
+#
+  # Scalar
+  my $baseDir = "";
+  my $cmd     = "";
+  my $copyDir = "";
+  my $devDir  = "";
+  my $refDir  = "";
+  my $end     = "";
+  my $extra   = "";
+  my $grid    = "";
+  my $met     = "";
+  my $nest    = "";
+  my $notDir  = "";
+  my $runDir  = "";
+  my $sim     = "";
+  my $start   = "";
+  my $yyyymmdd= "";
+  my $hhmm    = "";
+  my $home    = "";
+  my $file    = "";
+  my $filename= "";
+  my $user    = "";
+  my $date1   = "";
+  my $metType = "";
+  my $nTracers= "";
+  my $rstRoot = "";
+  my $rstFile = "";
+
+  # Arrays
+  my @txt     = ();
+  my @files;
+
+  #---------------------------------------------------------------------------
+  # Read options from the input file
+  #---------------------------------------------------------------------------
+  
+  # Read entire file into an array and remove newlines
+  open( I, "<$fileName" ) or die "Cannot open $fileName!\n";
+  chomp( @txt = <I> );
+  close( I );
+
+  # Get home directory
+  $home = $ENV{"HOME"};
+
+  # Get home directory
+  $user = $ENV{"USER"};
+
+  # Loop thru each line in the file; parse information into global variables
+  for ( my $i = 0; $i < scalar( @txt ); $i++ ) {
+
+    # Skip if the line only has whitespace
+    while ( $txt[$i] =~ /^\s*$/ ) { $i++ };
+
+    #------------------------------------------------------------------------
+    # Get values for global options (these precede the list of simulations)
+    # Skip over lines beginning with the # comment character
+    #
+    # PLEASE NOTE THAT THE FOLLOWING ORDER MUST BE OBSERVED:
+    # (1) VERSION   has to be listed last of all
+    # (2) DATA_ROOT has to be listed before HEMCO_ROOT
+    # (3) UNIT_TEST_ROOT has to be listed befor all other unit test dirs
+    #------------------------------------------------------------------------
+    if ( !( $txt[$i] =~ m/\#/ ) ) { 
+      if    ( $txt[$i] =~ "DATA_ROOT"   ) { $DATA_ROOT = &parse( $txt[$i] ); } 
+      elsif ( $txt[$i] =~ "UNIT_TEST_ROOT") { $UT_ROOT = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "JOB_DIR"     ) { $JOB_DIR   = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "LOG_DIR"     ) { $LOG_DIR   = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "RUN_ROOT"    ) { $RUN_ROOT  = &parse( $txt[$i] ); } 
+      elsif ( $txt[$i] =~ "RUN_DIR"     ) { $RUN_DIR   = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "WEB_GRID"    ) { $WEB_GRID  = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "WEB_PUSH"    ) { $WEB_PUSH  = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "COPY_CMD"    ) { $COPY_CMD  = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "COPY_PATH"   ) { $COPY_PATH = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "CODE_REF"    ) { $CODE_REF  = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "CODE_DEV"    ) { $CODE_DEV  = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "VERBOSE"     ) { $VERBOSE   = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "WARNINGS"    ) { $WARNINGS  = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "DESCRIPTION" ) { $DESCRIBE  = &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "VERSION"     ) { $VERSION   = &parse( $txt[$i] ); }
+    }
+
+    #------------------------------------------------------------------------
+    # Get information about requested run directories
+    #------------------------------------------------------------------------
+    elsif ( $txt[$i] =~ "!RUNS"     ) {
+
+      # Strip spaces from directory paths
+      $COPY_PATH  =~ s/ //g;
+      $DATA_ROOT  =~ s/ //g;
+      $RUN_ROOT   =~ s/ //g; 
+      $UT_ROOT    =~ s/ //g;
+
+      # Replace tokens in a few more variables
+      $UT_ROOT    =~ s/{HOME}/$home/g;
+      $COPY_PATH  =~ s/{HOME}/$home/g;
+      $COPY_PATH  =~ s/\~/$home/g;
+      $COPY_PATH  =~ s/{VERSION}/$VERSION/g;
+      $CODE_REF   =~ s/{HOME}/$home/g;
+      $CODE_DEV   =~ s/{HOME}/$home/g;
+      $RUN_ROOT   =~ s/{HOME}/$home/g;
+      $RUN_ROOT   =~ s/{UTROOT}/$UT_ROOT/g;
+      $JOB_DIR    =~ s/{HOME}/$home/g;
+      $JOB_DIR    =~ s/{UTROOT}/$UT_ROOT/g;
+      $LOG_DIR    =~ s/{HOME}/$home/g;
+      $LOG_DIR    =~ s/{UTROOT}/$UT_ROOT/g;
+      $LOG_DIR    =~ s/{VERSION}/$VERSION/g;
+      $RUN_DIR    =~ s/{RUNROOT}/$RUN_ROOT/g;
+      $RUN_DIR    =~ s/{UTROOT}/$UT_ROOT/g;
+
+      # Replace user token
+      $UT_ROOT    =~ s/{USER}/$user/g;
+      $COPY_PATH  =~ s/{USER}/$user/g;
+      $CODE_REF   =~ s/{USER}/$user/g;
+      $CODE_DEV   =~ s/{USER}/$user/g;
+      $RUN_ROOT   =~ s/{USER}/$user/g;
+      $JOB_DIR    =~ s/{USER}/$user/g;
+      $LOG_DIR    =~ s/{USER}/$user/g;
+      $RUN_DIR    =~ s/{USER}/$user/g;
+
+      # Make sure each of these directories exist before proceeding
+      &checkDir( $CODE_REF   );
+      &checkDir( $CODE_DEV   );
+      &checkDir( $DATA_ROOT  );
+
+       # Splash page
+      print '%%%%%%%%% GEOS-Chem CREATE DIFFTEST DIRECTORIES %%%%%%%%%'."\n"; # 
+      print "\%\%\% Version ID  : $VERSION\n";
+      print "\%\%\% Description : $DESCRIBE\n";
+      print "\%\%\%\n";
+
+      # Create $COPY_PATH if it doesn't exist
+      if ( !( -d $COPY_PATH ) ) { 
+	print "\%\%\% Creating $COPY_PATH\n";
+        qx( mkdir -p $COPY_PATH ); 
+      }
+
+      # Skip over comment lines
+      while ( $txt[$i] =~ m/^\#/ ) { $i++ }
+
+      # Loop over all requested simulations
+      while ( !($txt[$i] =~ m/END/ ) ) { 
+
+        # Skip if the line only has whitespace
+	while ( $txt[$i] =~ /^\s*$/ ) { $i++; }
+     
+	# Skip lines beginning with comments
+	if ( !( $txt[$i] =~ m/^\#/ ) ) {
+
+	  #-----------------------------------------------------------------
+	  # Parse each line that specifies an individual unit test.
+	  # Remove extraneous characters wherever necessary.
+	  #-----------------------------------------------------------------
+
+	  # Parse each line into values
+	  ( $met,   $grid, $nest, $sim, 
+	    $start, $end,  $extra       ) = split( ' ', $txt[$i] );
+
+	  # Make sure met, grid, nest are in lowercase
+	  $met     =~ tr/[A-Z]/[a-z]/;
+	  $grid    =~ tr/[A-Z]/[a-z]/;
+	  $nest    =~ tr/[A-Z]/[a-z]/;
+
+	  # Remove extraneous characters from $met
+	  $met     =~ s/\-//g;
+	  $met     =~ s/\_//g;
+	  $met     =~ s/\=//g;
+	  $met     =~ s/\.//g;
+
+	  # Remove extraneous characters from $nest
+	  $nest    =~ s/\-//g;
+	  $nest    =~ s/\_//g;
+	  $nest    =~ s/\.//g;
+
+	  # Remove extraneous characters from $extra
+	  $extra   =~ s/\-//g;
+	  $extra   =~ s/\_//g;
+	  $extra   =~ s/\.//g;
+
+	  # Get start date and hour
+	  $yyyymmdd= substr( $start, 0, 8 );
+	  $hhmm    = substr( $start, 8, 2 );
+	  $hhmm   .= "00";
+	  
+	  # Define the run directory name
+	  $runDir   = &getRunDir( $met, $grid, $nest, $sim );
+	  &checkDir( $runDir );
+
+	  # Get the directory name minus the full path
+	  $notDir   = &baseName( $runDir );
+
+	  # Directories in the remote location
+	  $baseDir = "$met\_$grid\_$sim";
+	  $copyDir = "$COPY_PATH/DiffTest\_$baseDir";
+	  $devDir  = "$copyDir/Dev";
+	  $refDir  = "$copyDir/Ref";
+
+	  #-----------------------------------------------------------------
+	  # Create the input.geos and HEMCO_Config.rc files from templates 
+	  # in the run directory for each requested unit test. 
+	  #-----------------------------------------------------------------
+
+	  # If $end is in YYYYMMDDhh format, then force it to be YYYYMMDDhhmm
+	  if ( length( $end ) == 10 ) { $end .= "00"; }
+
+	  # Splash page output
+	  print "\%\%\% Creating $copyDir from run directory $notDir\n";
+
+	  # Error check, make sure that the $copyDir does not already exist
+	  if ( -d $copyDir ) {
+	    print "\%\%\% ERROR!  $copyDir already exists!\n";
+	    print "\%\%\% Delete or move $copyDir before proceeding!\n";
+            print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'."\n";
+	    exit(1);
+  	  }
+
+	  # Copy DiffTest-specific files from UnitTest/difftest
+	  $cmd = "$COPY_CMD ./difftest $copyDir";
+	  qx/$cmd/;
+
+	  # Get start date in YYYYMMDD format
+          $date1= substr( $start, 0, 8 );
+
+	  # Define met field for IDL plotting routines
+          if ( ( $sim =~ m/standard/ ) || ( $sim =~ m/benchmark/ ) ) {
+             $metType = "$met";
+          } else {
+             $metType = "${met}_47L";
+          }
+
+	  # Hardcode number of tracers for several simulations for now
+	  # Eventually, find a better way to obtain these values
+          if    ( $sim =~ m/standard/    ) {
+             $nTracers = "162";
+          } elsif ( $sim =~ m/benchmark/ ) {
+             $nTracers = "183";
+          } elsif ( $sim =~ m/complexSOA_SVPOA/ ) {
+             $nTracers = "171";
+          } elsif ( $sim =~ m/complexSOA/ ) {
+             $nTracers = "164";
+          } elsif ( $sim =~ m/tropchem/  ) {
+             $nTracers = "145";
+          } elsif ( $sim =~ m/aerosol/   ) {
+             $nTracers = "23";
+          } elsif ( $sim =~ m/POPs/      ) {
+             $nTracers = "5";
+          } elsif ( $sim =~ m/RnPbBe/    ) {
+             $nTracers = "4";
+          } elsif ( $sim =~ m/Hg/        ) {
+             $nTracers = "3";
+          } else {
+             $nTracers = "1";
+          }
+
+	  # Edit the copied Makefile and shell scripts to reflect
+          # user settings in DiffTest.input
+	  &replaceText("$copyDir/Makefile",        "CODE_REF_PATH","$CODE_REF");
+	  &replaceText("$copyDir/Makefile",        "CODE_DEV_PATH","$CODE_DEV");
+	  &replaceText("$copyDir/summarizeDiagDiffs.sh","MET_GRID_SIM","$baseDir");
+	  &replaceText("$copyDir/summarizeDiagDiffs.sh", "START_DATE",  "${start}00");
+	  &replaceText("$copyDir/summarizeDiagDiffs.sh", "END_DATE",    "$end");
+	  &replaceText("$copyDir/locateDiagDiffs.sh",    "MET_GRID_SIM","$baseDir");
+	  &replaceText("$copyDir/locateDiagDiffs.sh",    "START_DATE",  "${start}00");
+	  &replaceText("$copyDir/locateDiagDiffs.sh",    "END_DATE",    "$end");
+	  &replaceText("$copyDir/plots/PlotDiffs.input", "MET_GRID_SIM", "$baseDir");
+	  &replaceText("$copyDir/plots/PlotDiffs.input", "START_DATE", "${start}00");
+	  &replaceText("$copyDir/plots/PlotDiffs.input", "DATE1", "$date1");
+	  &replaceText("$copyDir/plots/PlotDiffs.input", "MET_TYPE", "$metType");
+	  &replaceText("$copyDir/plots/PlotDiffs.input", "N_TRACERS", "$nTracers");
+	  
+	  # Copy run directory to DiffTest Dev subdirectory
+	  $cmd = "$COPY_CMD $runDir/* $devDir";
+          qx/$cmd/;
+
+	  # Make sure you have the difftest Makefile in Dev
+	  $cmd = "$COPY_CMD ./difftest/Dev/Makefile $devDir";
+	  qx/$cmd/;
+
+	  # Make the input.geos and HEMCO_Config.rc file from templates
+	  &makeInputs( $start, $end, $devDir, $met, $grid, $nest, $sim );
+
+	  # Remove the output files from the copied run dir
+	  $cmd =  "rm -f $devDir/input.geos.template";	    
+	  $cmd .= " $devDir/HISTORY.rc.template";
+	  $cmd .= " $devDir/HEMCO_Config.template";
+	  $cmd .= " $devDir/trac_avg.*";
+	  $cmd .= " $devDir/GEOSChem.Restart.*";
+	  $cmd .= " $devDir/lastbuild*";
+	  $cmd .= " $devDir/geos.*";
+	  $cmd .= " $devDir/Ox.mass.*";
+	  $cmd .= " $devDir/*.log";
+	  $cmd .= " $devDir/*.mp";
+	  $cmd .= " $devDir/*~";
+	  $cmd .= " $refDir/*~";
+	  $cmd .= " $copyDir/*~";
+   	  qx/$cmd/;
+
+	  # Create symbolic link to initial GC restart file
+	  $rstRoot = "$DATA_ROOT/GEOSCHEM_RESTARTS/v2018-11/initial_GEOSChem_rst.";
+	  if ( length( $nest ) > 0 ) {
+	    $rstFile = "$rstRoot$grid\_$sim\_$nest.nc";
+	  } else {
+	    if ( ( $sim =~ m/RRTMG/ ) ) {
+	      $rstFile = "$rstRoot$grid\_tropchem.nc";
+	    } elsif ( $sim =~ m/RnPbBe/ ) {
+	      $rstFile = "$rstRoot$grid\_RnPbBePasv_72L.nc";
+	    } else {
+	      $rstFile = "$rstRoot$notDir.nc";
+	    }
+	  }
+	  if ( !( -f $rstFile ) ){
+	    print "\nWARNING: File $rstFile does not exist, so a sample restart file will not be included in your run directory. Sample restart files can be found in the SPECIESCONC_RESTARTS directory or you can use your own restart file.\n\n";
+  	  } else {
+	    $cmd = "ln -sf $rstFile $devDir/GEOSChem.Restart.${yyyymmdd}_${hhmm}z.nc4";
+	    qx/$cmd/;
+          }
+
+	  # Loop over files in Dev to create symbolic links in Ref
+	  @files = <$copyDir/Dev/*>;
+	  foreach $file (@files) {
+	    if ( $file =~ /\.dat$/i || $file =~ m/HEMCO_restart/ ||
+                 $file =~ m/GEOSChem.Restart/ ) {
+	      $filename   = &baseName( $file );
+	      $cmd = "ln -s $file $refDir/$filename";
+	      qx/$cmd/;	      
+	    }
+	  }
+
+	  # Make a symbolic link in Ref to Dev/HEMCO_Config.rc
+	  $cmd = "ln -s $devDir/HEMCO_Config.rc $refDir/HEMCO_Config.rc";
+	  qx/$cmd/;	      
+
+	  # Make a symbolic link in Ref to Dev/HEMCO_Diagn.rc
+	  $cmd = "ln -s $devDir/HEMCO_Diagn.rc $refDir/HEMCO_Diagn.rc";
+	  qx/$cmd/;
+
+	  # Make a symbolic link in Ref to Dev/input.geos
+	  $cmd = "ln -s $devDir/input.geos $refDir/input.geos";
+	  qx/$cmd/;	      
+	  
+          # Copy UT/perl/getRunInfo to Dev directory
+          $cmd = "cp ./getRunInfo $devDir"; 
+          qx/$cmd/; 
+
+	  # Make a symbolic link in Ref to Dev/HISTORY.rc
+	  $cmd = "ln -s $devDir/HISTORY.rc $refDir/HISTORY.rc";
+	  qx/$cmd/;
+
+	  # Copy UT/perl/validate to Dev directory 
+          $cmd = "cp ./validate.pl $devDir"; 
+          qx/$cmd/;  
+        }
+
+	# Increment counter
+	$i++;
+      }
+    }	
+  }
+
+  # End splash page
+  print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'."\n";
+
+  # Return normally
+  return( $? );
+}
+#EOP
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: main
+#
+# !DESCRIPTION: Driver program for the gcCreateDiffTest script.
+#\\
+#\\
+# !INTERFACE:
+#
+sub main(@) {
+#
+# !CALLING SEQUENCE:
+#  doUnitTest OPTIONS-FILENAME DRYRUN
+#
+# !REVISION HISTORY:
+#  02 Sep 2015 - E. Lundgren - Initial version, based on gcCopyRunDirs
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+
+  # If the user passes a filename from the command line, use it
+  # Otherwise, default to "UnitTest.input"
+  if    ( scalar( @ARGV ) == 2 ) { &doCopyDirs( @ARGV                  ); }
+  elsif ( scalar( @ARGV ) == 1 ) { &doCopyDirs( $ARGV[0],            0 ); }
+  else                           { &doCopyDirs( "DiffTest.input", 0 ); }
+
+  # Exit and pass status code back
+  return( $? );
+}
+#EOC
+#------------------------------------------------------------------------------
+
+# Call main program
+main();
+
+# Exit and pass status code back to Unix shell
+exit( $? );
+
+

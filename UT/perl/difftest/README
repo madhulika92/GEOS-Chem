@@ -1,0 +1,156 @@
+GEOS-Chem DiffTest README
+
+This directory can be used to run a difference test for a GEOS-Chem 
+simulation. If this directory is for GEOS-FP, GEOS-5, MERRA, or MERRA2, it 
+can also be used to run difference tests with any of these three met fields. 
+These met fields share the same vertical and horizontal resolutions and can 
+therefore interchange restart files.
+
+A difference test validates two versions of GEOS-Chem. It compares model 
+output from a version of GEOS-Chem in which you have made updates (aka 
+the development code, or "Dev") against a version of GEOS-Chem with 
+known behavior (aka the reference code, or "Ref").
+
+Typically you can only expect a difference test to pass if you expect the 
+Dev code run to produce results identical to the Ref run code.  This will 
+be true if Dev differs from Ref only by structural changes (i.e. 
+modifications in how data gets passed from one place to another, 
+replacing old Fortran code with more modern equivalent code).  If Dev 
+contains scientific changes (new chemistry reactions, addition of 
+tracers, new photolysis reactions, etc.), then you can still do a difference 
+but the difftest will not pass. However, there are additional tools to 
+explore the differences that may be useful for validation.
+
+Difftests are not meant to replace benchmarking. The GCST will continue 
+to rely on the 1-month and 1-year benchmarks to validate the code.
+
+## Setup instructions ##
+
+The main directory is separated into Dev/, Ref/, and logs/ subdirectories.  
+There is a top-level Makefile as well.
+
+```
+cd DiffTest_Hg_4x5 (or whatever this specific DiffTest directory is)
+ls
+> Dev/  Makefile  Ref/  logs/  README.md
+```
+
+In the top-level Makefile, look for these lines to edit:
+
+```
+# Reference code directory
+ifndef CODE_REF
+ CODE_REF   :=/home/$(USER)/GC/Code.Ref
+endif
+
+# Development code directory
+ifndef CODE_DEV
+ CODE_DEV   :=/home/$(USER)/GC/Code.Dev
+endif
+```
+Here:
+
+* CODE_REF specifies the GEOS-Chem source code directory for the Ref code.  
+* CODE_DEV specifies the GEOS-Chem source code directory for the Dev code
+* You can edit the default settings of CODE_REF and CODE_DEV here, if they 
+are in a different location than your /home/$USER/GC/ directory path.  
+($USER = your Unix login ID.)
+
+In many cases, the Dev and Ref codes will only differ from each other by a 
+few commits.  To set up a Ref code directory you can make a copy the Dev 
+code directory, and then open a new Git branch at a commit at the 
+appropriate point in the past.  (See our GEOS-Chem wiki page for 
+instructions on how to revert to an older state of the code with Git.)
+
+## Running a difference test ##
+
+Basic instructions on performing a difftest are included in the header of
+the top-level Makefile of the difftest directory. More detailed instructions
+are included below.
+
+First, make sure that the input.geos file in the Dev/ directory has all of the 
+proper settings for your run.  The Ref/ directory links to this the 
+input.geos file to ensure that your run settings are the same for both
+Dev and Ref.
+
+Next, from top-level difftest directory type the following:
+
+      make superclean
+      make logclean
+
+Typing make superclean will do a make realclean in both the Dev and Ref 
+code directories and remove all output files from the Dev/ and Ref/ 
+subdirectories. Log files are stored in the logs/ directory and are removed
+by typing make logclean. NOTE: You don't have to do make superclean before 
+each difference test but it is a good idea to do it periodically.
+
+After cleaning the difftest directory, type the following to compile and run the Dev and Ref versions of GEOS-Chem and perform a difftest:
+
+     make -j4 TRACEBACK=y difftest
+
+NOTE: ISORROPIA is turned off by default for diff testing (NO_ISO=y). 
+You can add the other debug flags (BOUNDS=y DEBUG=y FPE=y etc.) if you wish.
+
+The difftest Makefile has several other options for compiling and running
+Dev and Ref. Options include the following (other compile options are
+omitted for clarity):
+
+     make -j4 refonly    # run/compile Ref
+     make -j4 devonly    # run/compile Dev
+     make -j4 devlib     # compile Dev
+     make -j4 devrun     # run Dev
+     make -j4 devcheck   # run/compile Dev and compare to Ref (previously run)
+     make -j4 check      # compare Dev against Ref (both previously run)
+
+You can also compile and run Ref and Dev code with the Totalview debugger
+using the commands below. 'tvsp' refers to single-processor mode while 
+'tvmp' refers to multi-processor mode.
+      
+     make -j4 DEBUG=y TRACEBACK=y FPE=y BOUNDS=y tvsp_ref 
+     make -j4 DEBUG=y TRACEBACK=y FPE=y BOUNDS=y tvmp_ref  
+     make -j4 DEBUG=y TRACEBACK=y FPE=y BOUNDS=y tvsp_dev
+     make -j4 DEBUG=y TRACEBACK=y FPE=y BOUNDS=y tvmp_dev
+
+There are several additional clean options in the Makefile that allow you 
+to target what you would like to clean up. These include:
+     
+     make refclean    # calls make realclean on Ref code
+     make devclean    # calls make realclean on Dev code
+     make realclean   # calls make reaclean on both Ref and Dev code
+     make fileclean   # removes all output files from Ref/ and Dev/
+     make logclean    # removes all log files from logs/
+     make superclean  # calls make realclean and make fileclean (keeps logs)
+
+To find out information about your run, you can print information to the
+screen using the following:
+
+     make printruninforef  # print Ref run information
+     make printruninfodev  # print Dev run information
+     make printbuildinfo   # print common compile settings for Ref and Dev
+     make printallinforef  # print run and compile information for Ref
+     make printallinfodev  # print run and compile information for Dev
+
+Finally, to see a summary of make options outlined above, type:
+
+     make help
+
+## Examining the results ##
+
+The results of the difference test will be sent to a file called 
+log.results.{met}.DDDHHMM. If all Ref and Dev files are identical, 
+indicated by validation output that lists "IDENTICAL" for sizes, checksums,
+and diffs for the GEOS-Chem diagnostic files, GEOS-Chem restart files, and 
+HEMCO restart file, then the Dev code passed the difference test.
+
+If the restart files (GEOSChem.Restart.YYYYMMDD_hhmmz.nc4.*) are identical, 
+but the diagnostic files (trac_avg.YYYYMMDDhhmm*) differ, then there is 
+a problem in the diagnostic output that needs to be further addressed.
+
+You can explore differences in output files by using the locatediff.sh and
+summarizediff.sh shell scripts located in the top-level directory. These
+scripts use IDL to compare diagnostic and restart output files. We 
+recommend using summarizediff.sh prior to using locatediff.sh to view
+a summary of differences. If differences are extensive then the output
+of locateDiff.sh will be very large.
+
+~ GEOS-Chem Support Team (geos-chem-support [at] as.harvard.edu), 3/24/2016

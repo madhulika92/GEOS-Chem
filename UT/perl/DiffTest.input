@@ -1,0 +1,154 @@
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !DESCRIPTION: Input file that specifies configuration for creating a
+#  DiffTest directory from the UnitTester. 
+#\\
+#\\
+# !REMARKS:
+#  For a complete description of how to customize the settings in the
+#  INPUTS and RUNS sections, see the following wiki posts:
+#
+#   wiki.geos-chem.org/Creating_GEOS-Chem_run_directories#Section_1:_INPUTS
+#   wiki.geos-chem.org/Creating_GEOS-Chem_run_directories#Section_2:_RUNS
+#
+# !REVISION HISTORY: 
+# Type 'gitk' at the prompt to browse the revision history.
+#EOP
+#------------------------------------------------------------------------------
+#
+# !INPUTS:
+#
+# %%% ID tags %%%
+#
+   VERSION        : 12.1.0
+   DESCRIPTION    : Create run directory from UnitTest
+#
+# %%% Data path and HEMCO settings %%%
+#
+   DATA_ROOT      : /n/holylfs/EXTERNAL_REPOS/GEOS-CHEM/gcgrid/data/ExtData
+   VERBOSE        : 0
+   WARNINGS       : 1
+#
+# %%% Unit tester path names %%%
+#
+   UNIT_TEST_ROOT : {HOME}/UT
+   RUN_ROOT       : {UTROOT}/runs
+   RUN_DIR        : {RUNROOT}/{RUNDIR}
+   PERL_DIR       : {UTROOT}/perl
+#
+# %%% Reference (Ref) and Development (Dev) codes %%%
+#
+   CODE_REF       : {HOME}/GC/Code.Ref
+   CODE_DEV       : {HOME}/GC/Code.Dev
+#
+# %%% Target directory and copy command %%%
+#
+   COPY_PATH      : {HOME}/GC/DiffTest/
+   COPY_CMD       : cp -rfL
+#
+# !RUNS:
+#  Specify the runs directories that you want to make DiffTests out of.
+#  Here we provide a few examples, but you may copy additional entries from
+#  UnitTest.input and modify the dates as needed. You can deactivate
+#  certain directories by commenting them out with "#".
+#
+#--------|-----------|------|----------------|------------|--------------|-----|
+# MET    | GRID      | NEST | SIMULATION     | START DATE | END DATE     |EXTRA|
+#--------|-----------|------|----------------|------------|--------------|-----|
+# ======= GEOS-Chem benchmark ================================================
+  geosfp   4x5         -      benchmark        2016070100   2016070101     -
+## ======= Radon-Lead-Beryllium ===============================================
+# geosfp   4x5         -      RnPbBe           2016010100   2016010101     -
+# merra2   4x5         -      RnPbBe           2016010100   2016010101     -
+# geosfp   2x25        -      RnPbBe           2016010100   2016010101     -
+# merra2   2x25        -      RnPbBe           2016010100   2016010101     -
+## ======= Mercury ============================================================
+# geosfp   4x5         -      Hg               2016010100   2016010101     -
+# merra2   4x5         -      Hg               2016010100   2016010101     -
+# geosfp   2x25        -      Hg               2016010100   2016010101     -
+# merra2   2x25        -      Hg               2016010100   2016010101     -
+## ======= Tagged Mercury =====================================================
+# geosfp   4x5         -      tagHg            2016010100   2016020101     -
+# merra2   4x5         -      tagHg            2016010100   2016020101     -
+## ======= POPs ===============================================================
+# geosfp   4x5         -      POPs             2016070100   2016070101     -
+# merra2   4x5         -      POPs             2016070100   2016070101     -
+# geosfp   2x25        -      POPs             2016070100   2016070101     -
+# merra2   2x25        -      POPs             2016070100   2016070101     -
+## ======= Methane ============================================================
+# geosfp   4x5         -      CH4              2016070100   2016070101     -
+# merra2   4x5         -      CH4              2016070100   2016070101     -
+# geosfp   2x25        -      CH4              2016070100   2016070101     -
+# merra2   2x25        -      CH4              2016070100   2016070101     -
+# geosfp   025x03125   na     CH4              2016070100   2016070101     -
+# merra2   05x0625     na     CH4              2016070100   2016070101     -
+# ======= Tagged Methane ======================================================
+# geosfp   4x5         -      tagCH4           2016070100   2016070101     -
+# merra2   4x5         -      tagCH4           2016070100   2016070101     -
+# geosfp   2x25        -      tagCH4           2016070100   2016070101     -
+# merra2   2x25        -      tagCH4           2016070100   2016070101     -
+## ======= Tagged O3 ==========================================================
+# geosfp   4x5         -      tagO3            2016070100   2016070101     -
+# merra2   4x5         -      tagO3            2016070100   2016070101     -
+# geosfp   2x25        -      tagO3            2016070100   2016070101     -
+# merra2   2x25        -      tagO3            2016070100   2016070101     -
+## ======= Tagged CO ==========================================================
+# geosfp   4x5         -      tagCO            2016070100   2016070101     -
+# merra2   4x5         -      tagCO            2016070100   2016070101     -
+# geosfp   2x25        -      tagCO            2016070100   2016070101     -
+# merra2   2x25        -      tagCO            2016070100   2016070101     -
+## ======= Carbon Dioxide =====================================================
+# geosfp   2x25        -      CO2              2016070100   2016070101     -
+# merra2   2x25        -      CO2              2016070100   2016070101     -
+## ======= Mass Convervation Test =============================================
+# geosfp   2x25        -      masscons         2016070100   2016070101     -
+# merra2   2x25        -      masscons         2016070100   2016070101     -
+## ======= Offline Aerosols ===================================================
+# geosfp   4x5         -      aerosol          2016070100   2016070101     -
+# merra2   4x5         -      aerosol          2016070100   2016070101     -
+# geosfp   2x25        -      aerosol          2016070100   2016070101     -
+# merra2   2x25        -      aerosol          2016070100   2016070101     -
+## ======= Standard ===========================================================
+# geosfp   4x5         -      standard         2016070100   2016070101     -
+# merra2   4x5         -      standard         2016070100   2016070101     -
+# geosfp   2x25        -      standard         2016070100   2016070101     -
+# merra2   2x25        -      standard         2016070100   2016070101     -
+## ======= Tropchem ===========================================================
+# geosfp   4x5         -      tropchem         2016070100   2016070101     -
+# merra2   4x5         -      tropchem         2016070100   2016070101     -
+# geosfp   2x25        -      tropchem         2016070100   2016070101     -
+# merra2   2x25        -      tropchem         2016070100   2016070101     -
+## ======= Complex SOA w/ SVPOA ===============================================
+# geosfp   4x5         -      complexSOA       2016070100   2016070101     -
+# merra2   4x5         -      complexSOA       2016070100   2016070101     -
+# geosfp   2x25        -      complexSOA       2016070100   2016070101     -
+# merra2   2x25        -      complexSOA       2016070100   2016070101     -
+# geosfp   4x5         -      complexSOA_SVPOA 2016070100   2016070101     -
+# merra2   4x5         -      complexSOA_SVPOA 2016070100   2016070101     -
+# geosfp   2x25        -      complexSOA_SVPOA 2016070100   2016070101     -
+# merra2   2x25        -      complexSOA_SVPOA 2016070100   2016070101     -
+## ======= Acid uptake on dust ================================================
+# geosfp   4x5         -      aciduptake       2016070100   2016070101     -
+# geosfp   2x25        -      aciduptake       2016070100   2016070101     -
+## ======= Marine POA =========================================================
+# geosfp   4x5         -      marinePOA        2016070100   2016070101     -
+# geosfp   2x25        -      marinePOA        2016070100   2016070101     -
+## ======= TOMAS aerosol microphysics =========================================
+# geosfp   4x5         -      TOMAS15          2016070100   2016070101     -
+# geosfp   4x5         -      TOMAS40          2016070100   2016070101     -
+## ======= RRTMG online radiative transfer ====================================
+# geosfp   4x5         -      RRTMG            2016070100   2016070101     -
+# merra2   4x5         -      RRTMG            2016070100   2016070101     -
+# geosfp   2x25        -      RRTMG            2016070100   2016070101     -
+# merra2   2x25        -      RRTMG            2016070100   2016070101     -
+## ======= Nested model runs ==================================================
+# merra2   05x0625     as     tropchem         2016070100   2016070101     -
+# merra2   05x0625     na     tropchem         2016070100   2016070101     -
+# geosfp   025x03125   ch     tropchem         2016070100   2016070101     -
+# geosfp   025x03125   na     tropchem         2016070100   2016070101     -
+!END OF RUNS:
+#EOP
+#------------------------------------------------------------------------------

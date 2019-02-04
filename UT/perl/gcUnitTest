@@ -1,0 +1,914 @@
+#!/usr/bin/perl -w
+
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !MODULE: gcUnitTest
+#
+# !DESCRIPTION: This perl script is the driver for the GEOS-Chem Unit Tester,
+#  which submits several automatic debugging jobs.
+#\\
+#\\
+# !USES:
+#
+require 5.003;                     # Need this version of Perl or newer
+use English;                       # Use English language
+use Carp;                          # Get detailed error messages
+use strict;
+use FindBin qw/$RealBin/;          # Look for perl modules
+use lib        $RealBin;           #  in the current folder
+use Dates   qw/&getLocalTime/;     # Get routines from module Dates.pm
+use UtUtils qw/&baseName
+               &checkDir
+               &cleanDir
+               &makeHemcoCfg
+               &makeInputGeos
+               &makeHistoryRc
+               &parse
+               &readResults
+               &makeMatrix/;       # Get routines from module UtUtils.pm
+#
+# !PUBLIC DATA MEMBERS:
+#
+
+# Directories
+our $CODE_DIR        = "";         # GEOS-Chem Code directory
+our $UT_ROOT         = "";         # Unit test root directory
+our $DATA_ROOT       = "";         # Root path for GEOS-Chem data directory
+our $JOB_DIR         = "";         # Unit Test job directory
+our $LOG_DIR         = "";         # Unit Test logs directory
+our $PERL_DIR        = "";         # Unit Test Perl directory
+our $RUN_ROOT        = "";         # Unit Test top-level run directory
+our $RUN_DIR         = "";         # Unit Test run directory subdirectory
+
+# Files
+our $RESULTS         = "";         # Results.log file
+our $TEMPLATE        = "";         # Template web page
+our $TXT_GRID        = "";         # Text file w/ unit test matrix
+our $WEB_GRID        = "";         # Web page w/ unit test matrix
+our $WEB_PUSH        = "NONE";     # Remote server for web page push
+
+# Options
+our $COMPILER        = "";         # Compiler variable for GEOS-Chem
+our $MAKE_CMD        = "";         # Make command with debug options
+our $SUBMIT          = "";         # Queue submit command
+our $VERSION         = "";         # GEOS-Chem version number
+our $VERSION_TAG     = "";         # GEOS-Chem version tag
+our $DESCRIBE        = "";         # Short description of unit tests
+our $VERBOSE         = "3";        # HEMCO verbose setting (0-3)
+our $WARNINGS        = "3";        # HEMCO warnings setting (0-3)
+
+# Optional parameters (including SLURM tags)
+our $INIT_COMMANDS   = "";         # Optional init cmds for top of job script
+our $SLURM_CPUS      = "";         # SLURM: Number of CPUs (-c)
+our $SLURM_NODES     = "";         # SLURM: Number of nodes (-N)
+our $SLURM_TIME      = "";         # SLURM: Run time (-t D-hh:mm)
+our $SLURM_MEM       = "";         # SLURM: Memory per node (MB)
+our $SLURM_MEMPERCPU = "";         # SLURM: Memory per CPU (MB)
+our $SLURM_PARTITION = "";         # SLURM: Partition (aka queue) name
+our $SLURM_CONSTRAINT= "";         # SLURM: Constraints
+our $SLURM_STDOUT    = "";         # SLURM: Stdout stream
+our $SLURM_STDERR    = "";         # SLURM: Stderr stream
+our $SLURM_MAILUSER  = "";         # SLURM: Email address for updates
+our $SLURM_MAILTYPE  = "";         # SLURM: When to send emails?
+#		
+# !PUBLIC MEMBER FUNCTIONS:
+#  &main()     : Driver routine for gcUnitTest
+#
+# !PRIVATE MEMBER FUNCTIONS:
+#  &getRunDir  : Returns the name of the GEOS-Chem run directory
+#  &makeInputs : Creates the input.geos file the run directory 
+#  &doUnitTest : Reads user options from a file and starts the unit test
+#
+# !CALLING SEQUENCE:
+#  gcUnitTest [ OPTIONS-FILENAME ] [ DRYRUN ]
+#
+# !REMARKS:
+#  If no value is passed for OPTIONS-FILENAME, then gcUnitTest will
+#  read user options from the input file: "UnitTest.input".
+#
+# !REVISION HISTORY: 
+#  22 Aug 2013 - R. Yantosca - Initial version
+#  04 Apr 2014 - R. Yantosca - Now can push the web page to a remote server
+#  27 Jun 2014 - R. Yantosca - Updated for HEMCO emissions
+#  02 Jul 2014 - R. Yantosca - Now accepts optional DRYRUN argument, which
+#                              will set up input files but not run unit tests
+#  28 Jul 2014 - R. Yantosca - End date/time can be YYYYMMDDhh or YYYYMMDDhhmm
+#  19 May 2015 - R. Yantosca - Now add VERBOSE and WARNINGS global variables
+#  19 Jun 2015 - R. Yantosca - Added optional SLURM tags
+#  22 Jun 2015 - R. Yantosca - Now write out unit test results to a text file
+#                              in case a web push is disallowed
+#  17 Dec 2015 - R. Yantosca - Now get constraints for the SLURM job
+#  18 Dec 2015 - R. Yantosca - Add UT_ROOT directory.  This lets us place the
+#                              unit test directory in scratch space if needed.
+#  28 Apr 2016 - R. Yantosca - Now use -c $SLURM_CPUS (i.e. cpus-per-task)
+#  06 Aug 2018 - R. Yantosca - Now add VERSION_TAG as a separate input
+#  30 Aug 2018 - M. Sulprizio- Remove $HEMCO_ROOT; Now pass $DATA_ROOT to
+#                              makeHemcoCfg instead
+#EOP
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: getRunDir
+#
+# !DESCRIPTION: Returns the unit test run directory for a given combination
+#  of met field, grid, simulation type, and nested-grid type.
+#\\
+#\\
+# !INTERFACE:
+#
+sub getRunDir($$$$) {
+#
+# !INPUT PARAMETERS:
+#
+  # $met  : Met field type
+  # $grid : Horiziontal grid
+  # $nest : Nested grid option (if necessary)
+  # $sim  : Simulation type
+  my ( $met, $grid, $nest, $sim ) = @_;
+#
+# !RETURN VALUE:
+#
+  my $runDir = ""; 
+#
+# !CALLING SEQUENCE:
+#  &doUnitTest( "UnitTest.input" );
+#
+# !REVISION HISTORY:
+#  22 Aug 2013 - R. Yantosca - Initial version
+#  31 Jan 2014 - R. Yantosca - Now append the nested grid suffix if
+#                              length( $nest ) is greater than zero
+#  13 Jul 2016 - M. Sulprizio- Modify runLoc for consolidated run directories
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+#
+# !LOCAL VARIABLES:
+#
+  # Run directory string
+  my $runLoc = "";
+
+  if ( length( $nest ) > 0 ) {
+    $runLoc = "{MET}_{GRID}_{SIM}_{NEST}";
+  } else {
+    $runLoc = "{GRID}_{SIM}";
+  }
+
+  # Replace tokens
+  $runLoc =~ s/{MET}/$met/g;
+  $runLoc =~ s/{GRID}/$grid/g;
+  $runLoc =~ s/{SIM}/$sim/g;
+  $runLoc =~ s/{NEST}/$nest/g;
+  $runDir = "$RUN_DIR";
+  $runDir =~ s/{RUNDIR}/$runLoc/g;
+  
+  # Return the run directory
+  return( $runDir );
+}
+#EOP
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: makeInputs
+#
+# !DESCRIPTION: Creates the input.geos file in a unit-test run-directory.
+#  It starts with a template file and then replaces some tokens to customize
+#  the input.geos file for the given simulation.
+#\\
+#\\
+# !INTERFACE:
+#
+sub makeInputs($$$$$$$$) {
+#
+# !INPUT PARAMETERS:
+#
+  # $start  : Start date of test simulation (YYYYMMDDhh                )
+  # $end    : End   date of test simulation (YYYYMMDDhh or YYYYMMDDhhmm)
+  # $runDir : Run directory
+  my ( $start, $end, $runDir, $met, $grid, $nest, $sim ) = @_;
+#
+# !CALLING SEQUENCE:
+#  &makeInputFiles( $start, $end, $runDir );
+#
+# !REVISION HISTORY:
+#  22 Aug 2013 - R. Yantosca - Initial version
+#  27 Jun 2014 - R. Yantosca - Updated for the HEMCO_Config.rc file
+#  30 Jun 2014 - R. Yantosca - Now accept $nest via the arg list
+#  02 Jul 2014 - R. Yantosca - Now pass $start to routine &makeHemcoCfg
+#  28 Jul 2014 - R. Yantosca - Now accept $end as YYYYMMDDhhmm or YYYMMDDhh
+#  03 Sep 2014 - R. Yantosca - Now call &getHemcoEndTime
+#  23 Sep 2014 - R. Yantosca - Remove call to &getHemcoEndTime.  The HEMCO
+#                              restart timestamp is now the same as $end.
+#  19 May 2015 - R. Yantosca - Pass $VERBOSE, $WARNINGS to &makeHemcoCfg
+#  29 Apr 2016 - E. Lundgren - Allow start date to include minutes
+#  13 Jul 2016 - M. Sulprizio- Specify inpGeos file as input.geos.met_grid_sim
+#                              and copy that to input.geos immediately before
+#                              make command. This allows us to use one directory
+#                              (e.g. 4x5_tropchem) for GEOS-5, GEOS-FP, MERRA,
+#                              and MERRA-2.
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+#
+# !LOCAL VARIABLES:
+#
+  # Strings
+  my $d0       = "";
+  my $h0       = "";
+  my $d1       = "";
+  my $h1       = "";
+  my $inpTmpl  = "$runDir/input.geos.template";
+  my $inpGeos  = "$runDir/input.geos.$met\_$grid\_$sim";
+  my $hcoTmpl  = "$runDir/HEMCO_Config.template";
+  my $hcoCfg   = "$runDir/HEMCO_Config.rc.$met\_$grid\_$sim";
+  my $histTmpl = "$runDir/HISTORY.rc.template";
+  my $histRc   = "$runDir/HISTORY.rc";
+  my $errMsg   = "makeInputs: DATE must be YYYYMMDDhh or YYYYMMDDhhmm!";
+  my $hcoEnd   = ""; 
+
+  # Get start date and hour
+  $d0          = substr( $start, 0, 8 );
+  $h0          = substr( $start, 8, 2 );
+  $h0         .= "0000";
+
+  # Compute the starting hour (hhmmss) from the starting string, 
+  # which may be in either YYYYMMDDhhmm or YYYYMMDDhh format
+  if    ( length( $start ) == 12 ) { $h0 = substr( $start, 8, 4 ) . "00";   } 
+  elsif ( length( $start ) == 10 ) { $h0 = substr( $start, 8, 2 ) . "0000"; }
+  else                           { print "$errMsg\n"; exit(1);          }
+
+  # Get end date and hour
+  $d1         = substr( $end,   0, 8 );
+
+  # Compute the ending hour (hhmmss) from the ending string, 
+  # which may be in either YYYYMMDDhhmm or YYYYMMDDhh format
+  if    ( length( $end ) == 12 ) { $h1 = substr( $end, 8, 4 ) . "00";   } 
+  elsif ( length( $end ) == 10 ) { $h1 = substr( $end, 8, 2 ) . "0000"; }
+  else                           { print "$errMsg\n"; exit(1);          }
+
+  # Make the input.geos file in the run directory
+  &makeInputGeos( $d0, $h0, $d1, $h1, $met, $DATA_ROOT, $inpTmpl, $inpGeos );
+
+  # Make the HEMCO_Config.rc file in the run directory
+  &makeHemcoCfg( $hcoTmpl, $start,   $met,      $grid,       $nest,    
+                 $sim,     $VERBOSE, $WARNINGS, $DATA_ROOT, $hcoCfg );
+
+  # Make the HISTORY.rc file in the run directory
+  if ( -f $histTmpl ) { 
+    &makeHistoryRc( $histTmpl, $d0, $h0, $d1, $h1, $histRc );
+  }
+
+  # Return 
+  return( $? );
+}
+#EOC
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: makeSlurmTags
+#
+# !DESCRIPTION: Creates the #SBATCH tags that are needed to submit the unit 
+#  test job to a computer system that uses the SLURM scheduler.
+#\\
+#\\
+# !INTERFACE:
+#
+sub makeSlurmTags() {
+#
+#
+# !CALLING SEQUENCE:
+#  @slurmTags = &makeSlurmTags();
+#
+# !REVISION HISTORY:
+#  21 Mar 2014 - R. Yantosca - Initial version
+#  24 Mar 2014 - R. Yantosca - Now pass %unitTests hash as an argument
+#  07 Apr 2014 - R. Yantosca - Now make $webFile chmod 664
+#  05 Oct 2015 - E. Lundgren - Move export CPU number to after SBATCH commands
+#  04 Dec 2015 - R. Yantosca - Remove comments above #SBATCH tags
+#  17 Dec 2015 - R. Yantosca - Now add optional #SBATCH --constraint tag
+#  28 Apr 2016 - R. Yantosca - Now use -c $SLURM_CPUS which is more efficient
+#  19 Oct 2017 - R. Yantosca - Added #SBATCH --no-requeue to SLURM commands
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+#
+# !LOCAL VARIABLES:
+#
+  my @slurm = ();
+
+  # Number of CPUs
+  if ( length( $SLURM_CPUS ) > 0 ) {  
+    @slurm = ( @slurm, "\#SBATCH -c $SLURM_CPUS\n" ); 
+  }
+
+  # Number of nodes
+  if ( length( $SLURM_NODES ) > 0 ) { 
+    @slurm = ( @slurm, "\#SBATCH -N $SLURM_NODES\n" );
+  }
+
+  # Time requested
+  if ( length( $SLURM_TIME ) > 0 ) { 
+    @slurm = ( @slurm, "\#SBATCH -t $SLURM_TIME\n" );  
+  }
+
+  # Mem per node
+  if ( length( $SLURM_MEM ) > 0 ) {
+    @slurm = ( @slurm, "\#SBATCH --mem=$SLURM_MEM\n" ); 
+  }
+  
+  # Mem per CPU
+  if ( length( $SLURM_MEMPERCPU ) > 0 ) {
+    @slurm = ( @slurm, "\#SBATCH --mem-per-cpu=$SLURM_MEMPERCPU\n" ); 
+  }
+
+  # Partition
+  if ( length( $SLURM_PARTITION ) > 0 ) {
+    @slurm = ( @slurm, "\#SBATCH -p $SLURM_PARTITION\n" ); 
+  }
+
+  # SLURM constraints (i.e. which type of CPU to run on, etc)
+  if ( length( $SLURM_CONSTRAINT ) > 0 ) {
+    @slurm = ( @slurm, "\#SBATCH --constraint=$SLURM_CONSTRAINT\n" ); 
+  }
+  
+  # Email address for notifications
+  if ( length( $SLURM_MAILUSER ) > 0 ) {
+    @slurm = ( @slurm, "\#SBATCH --mail-user=$SLURM_MAILUSER\n" ); 
+  }
+
+  # When to send emails
+  if ( length( $SLURM_MAILTYPE ) > 0 ) {
+    @slurm = ( @slurm, "\#SBATCH --mail-type=$SLURM_MAILTYPE\n" ); 
+  }
+
+  # Stdout stream
+  if ( length( $SLURM_STDOUT ) > 0 ) {
+    @slurm = ( @slurm, "\#SBATCH -o $SLURM_STDOUT\n" ); 
+  }
+
+  # Stderr stream
+  if ( length( $SLURM_STDERR ) > 0 ) {
+    @slurm = ( @slurm, "\#SBATCH -e $SLURM_STDERR\n" ); 
+  }
+
+  # Also add --no-requeue to avoid having the SLURM scheduler restart the
+  # unit test job in case the node goes down and reboots for any reason
+  @slurm = ( @slurm, "\#SBATCH --no-requeue\n" ); 
+
+  # Add any optional initialization commands (such as loading modules)
+  # that need to immediately below the SLURM tags
+  if ( length( $INIT_COMMANDS ) > 0 ) {
+    @slurm = ( @slurm, "$INIT_COMMANDS\n" ); 
+  }
+  
+  # Export number of CPUs (NOTE: This must be done after all SBATCH commands)
+  if ( length( $SLURM_CPUS ) > 0 ) {  
+    @slurm = ( @slurm, "export OMP_NUM_THREADS=$SLURM_CPUS\n\n" ); 
+  }
+
+  # Return list of SLURM tags
+  return( @slurm );
+}
+#EOP
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: doUnitTest
+#
+# !DESCRIPTION: Reads the input file name (containing user-specified options)
+#  file and creates a job script.  The job script (which can be submitted to
+#  a computational queue) will be used to call Makefiles to compile and run 
+#  GEOS-Chem with debugging options.
+#\\
+#\\
+# !INTERFACE:
+#
+sub doUnitTest($$) {
+#
+# !INPUT PARAMETERS:
+#
+  # $fileName : File in which unit test options are listed
+  # $dryRun   : If =1, will set up input files, but not submit unit test job 
+  my ( $fileName, $dryRun ) = @_;
+#
+# !CALLING SEQUENCE:
+#  &doUnitTest( $fileName );
+#
+# !REVISION HISTORY:
+#  22 Aug 2013 - R. Yantosca - Initial version, based on sleepNrt
+#  27 Aug 2013 - R. Yantosca - Now add $PERL_DIR to the make command
+#  28 Aug 2013 - R. Yantosca - Now call &cleanDir from UtUtils.pm
+#  28 Aug 2013 - R. Yantosca - Minor bug fixes.  Also now send results
+#                              to a separate file from stdout.
+#  29 Aug 2013 - R. Yantosca - Make sure that $met, $grid, $nest are in
+#                              lowercase, regardless of input
+#  05 Sep 2013 - R. Yantosca - Now the user must explicitly call the separate
+#                              cleanFiles program to remove files in the
+#                              job & log dirs.  Still need to work on cleaning
+#                              up all files in the run dirs.
+#  05 Sep 2013 - R. Yantosca - Now print log directory name
+#  30 Jan 2014 - R. Yantosca - Improve informational output
+#  31 Jan 2014 - R. Yantosca - Now allow for extra Makefile flags
+#  24 Apr 2014 - R. Yantosca - Now update the web page after each unit test
+#                              so that we can have a running display
+#  30 Jun 2014 - R. Yantosca - Now pass $nest to &makeInputs
+#  28 Jul 2014 - R. Yantosca - Improved comments.  Now call routine &makeInputs
+#                              before saving the commands for the master script
+#  03 Sep 2014 - R. Yantosca - If $end is in YYYYMMDDhh format, then convert
+#                              to YYYYMMDDhhmm format by adding "00"
+#  23 Sep 2014 - R. Yantosca - The timestamp for the HEMCO restart file is
+#                              now the same as $end.
+#  06 Mar 2015 - R. Yantosca - Skip lines that only have whitespace
+#  11 Mar 2015 - R. Yantosca - Now do not write START, END, HMCO_END to the
+#                              job script.  We now get these values by parsing
+#                              the input.geos in each run directory.
+#  13 Mar 2015 - M. Sulprizio- Now get username for file paths
+#  10 Apr 2015 - E. Lundgren - Remove MET and GRID from make command and
+#                              now use UT/perl/Makefile for unit testing.
+#  19 May 2015 - R. Yantosca - Now look for VERBOSE, WARNINGS in input file
+#  18 Jun 2015 - M. Sulprizio- Now use home directory for file paths
+#  18 Jun 2015 - R. Yantosca - Use mkdir -p instead of mkdirhier
+#  22 Jun 2015 - R. Yantosca - Now append SLURM #SBATCH tags to job file
+#  17 Dec 2015 - R. Yantosca - Now get optional SLURM_CONSTRAINT info
+#  18 Dec 2015 - R. Yantosca - Add UT_ROOT variable
+#  23 Aug 2016 - R. Yantosca - Bug fix: Replace {HOME} in $HEMCO_ROOT
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+#
+# !LOCAL VARIABLES:
+#
+  # Scalars
+  my $cmd      = "";
+  my $end      = "";
+  my $extra    = "";
+  my $grid     = "";
+  my $hcoEnd   = "";
+  my $jobFile  = "";
+  my $logHdr   = "";
+  my $logRslt  = "";
+  my $logTop   = "";
+  my $met      = "";
+  my $makeCmd  = ""; 
+  my $nest     = "";
+  my $notDir   = "";
+  my $runDir   = "";
+  my $sim      = "";
+  my $status   = "";
+  my $stdout   = "";
+  my $start    = "";
+  my $yyyymmdd = "";
+  my $hhmm     = "";
+  my $locTime  = "";
+  my $rstRoot  = "";
+  my $rstFile  = "";
+
+  # Arrays
+  my @cmds     = ();
+  my @slurm    = ();
+  my @txt      = ();
+  my @subStrs  = ();
+  my @months   = qw/Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec/;
+
+  # Unix environment settings
+  my $home     = $ENV{"HOME"};
+  my $user     = $ENV{"USER"};
+
+  #---------------------------------------------------------------------------
+  # Read options from the input file
+  #---------------------------------------------------------------------------
+  
+  # Read entire file into an array and remove newlines
+  open( I, "<$fileName" ) or die "Cannot open $fileName!\n";
+  chomp( @txt = <I> );
+  close( I );
+
+  # Loop thru each line in the file; parse information into global variables
+  for ( my $i = 0; $i < scalar( @txt ); $i++ ) {
+
+    # Skip if the line only has whitespace
+    while ( $txt[$i] =~ /^\s*$/ ) { $i++ };
+
+    #------------------------------------------------------------------------
+    # Get values for global options (these precede the list of simulations)
+    # Skip over lines beginning with the # comment character
+    #
+    # PLEASE NOTE THAT THE FOLLOWING ORDER MUST BE OBSERVED:
+    # (1) VERSION        has to be listed last of all
+    # (2) VERSION_TAG    has to be listed second-last of all
+    # (3) DATA_ROOT      has to be listed before HEMCO_ROOT
+    # (4) RUN_ROOT       has to be listed before RUN_DIR
+    # (5) WEB_GRID       has to be listed before WEB_PUSH
+    # (6) UNIT_TEST_ROOT has to be listed before other unit test dirs
+    #------------------------------------------------------------------------
+    if ( !( $txt[$i] =~ m/\#/ ) ) { 
+      if    ( $txt[$i] =~ "CODE_DIR"        ) { $CODE_DIR = 
+						  &parse( $txt[$i] ); } 
+      elsif ( $txt[$i] =~ "DATA_ROOT"       ) { $DATA_ROOT = 
+						  &parse( $txt[$i] ); } 
+      elsif ( $txt[$i] =~ "UNIT_TEST_ROOT"  ) { $UT_ROOT = 
+						  &parse( $txt[$i] ); } 
+      elsif ( $txt[$i] =~ "JOB_DIR"         ) { $JOB_DIR = 
+						  &parse( $txt[$i] ); } 
+      elsif ( $txt[$i] =~ "LOG_DIR"         ) { $LOG_DIR = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "MAKE_CMD"        ) { $MAKE_CMD = 
+						  &parse( $txt[$i] ); } 
+      elsif ( $txt[$i] =~ "PERL_DIR"        ) { $PERL_DIR = 
+						  &parse( $txt[$i] ); } 
+      elsif ( $txt[$i] =~ "RUN_ROOT"        ) { $RUN_ROOT = 
+						  &parse( $txt[$i] ); } 
+      elsif ( $txt[$i] =~ "RUN_DIR"         ) { $RUN_DIR = 
+						  &parse( $txt[$i] ); } 
+      elsif ( $txt[$i] =~ "SUBMIT"          ) { $SUBMIT = 
+						  &parse( $txt[$i] ); } 
+      elsif ( $txt[$i] =~ "TEMPLATE"        ) { $TEMPLATE = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "TXT_GRID"        ) { $TXT_GRID = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "WEB_GRID"        ) { $WEB_GRID = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "WEB_PUSH"        ) { $WEB_PUSH = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "VERBOSE"         ) { $VERBOSE = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "WARNINGS"        ) { $WARNINGS  = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "INIT_COMMANDS"   ) { $INIT_COMMANDS = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "SLURM_CPUS"      ) { $SLURM_CPUS = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "SLURM_NODES"     ) { $SLURM_NODES = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "SLURM_TIME"      ) { $SLURM_TIME = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "SLURM_MEM"       ) { $SLURM_MEM = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "SLURM_MEMPERCPU" ) { $SLURM_MEMPERCPU = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "SLURM_PARTITION" ) { $SLURM_PARTITION = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "SLURM_CONSTRAINT" ) { $SLURM_CONSTRAINT = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "SLURM_MAILUSER"  ) { $SLURM_MAILUSER  = 
+						  &parse( $txt[$i] ); }     
+      elsif ( $txt[$i] =~ "SLURM_MAILTYPE"  ) { $SLURM_MAILTYPE  = 
+						  &parse( $txt[$i] ); }     
+      elsif ( $txt[$i] =~ "SLURM_STDOUT"    ) { $SLURM_STDOUT    = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "SLURM_STDERR"    ) { $SLURM_STDERR = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "DESCRIPTION"     ) { $DESCRIBE = 
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "VERSION_TAG"     ) { $VERSION_TAG =
+						  &parse( $txt[$i] ); }
+      elsif ( $txt[$i] =~ "VERSION"         ) { $VERSION = 
+						  &parse( $txt[$i] ); }
+    }
+
+    #------------------------------------------------------------------------
+    # Get information about requested unit test simulations
+    #------------------------------------------------------------------------
+    elsif ( $txt[$i] =~ "!RUNS"     ) {
+
+      # Replace tokens in UT_ROOT 
+      $UT_ROOT      =~ s/{HOME}/$home/g;
+      $UT_ROOT      =~ s/{USER}/$user/g;
+      
+      # Replace version number and today's date tokens in $VERSION_TAG
+      $locTime      =  &getLocalTime();
+      @subStrs      =  split( / /, $locTime );
+      $locTime      =  $subStrs[0];
+      @subStrs      =  split( /\//, $locTime );
+      $locTime      =  $months[ int( $subStrs[1] )-1 ] . "$subStrs[2]";
+      $VERSION_TAG  =~ s/{VERSION}/$VERSION/g;
+      $VERSION_TAG  =~ s/{TODAYSDATE}/$locTime/g;
+
+      # Append the version number or tag to the log directory
+      # So that we can keep several log files simultaneously
+      $LOG_DIR      =~ s/{VERSION}/$VERSION/g;
+      $LOG_DIR      =~ s/{VERSION_TAG}/$VERSION_TAG/g;
+      $LOG_DIR      =~ s/{HOME}/$home/g;
+      $LOG_DIR      =~ s/{USER}/$user/g;
+      $LOG_DIR      =~ s/{UTROOT}/$UT_ROOT/g;
+      if ( !( -f $LOG_DIR ) ) { qx( mkdir -p $LOG_DIR ); }
+
+      # Replace directory tokens in a few more variables
+      $CODE_DIR     =~ s/{HOME}/$home/g;
+      $RUN_ROOT     =~ s/{HOME}/$home/g;
+      $RUN_ROOT     =~ s/{UTROOT}/$UT_ROOT/g;
+      $JOB_DIR      =~ s/{HOME}/$home/g;
+      $JOB_DIR      =~ s/{UTROOT}/$UT_ROOT/g;
+      $PERL_DIR     =~ s/{HOME}/$home/g;
+      $PERL_DIR     =~ s/{UTROOT}/$UT_ROOT/g;
+      $TEMPLATE     =~ s/{PERLDIR}/$PERL_DIR/g;
+      $TXT_GRID     =~ s/{VERSION}/$VERSION/g;
+      $TXT_GRID     =~ s/{VERSION_TAG}/$VERSION_TAG/g;
+      $TXT_GRID     =~ s/{LOGDIR}/$LOG_DIR/g;
+      $WEB_GRID     =~ s/{VERSION}/$VERSION/g;
+      $WEB_GRID     =~ s/{VERSION_TAG}/$VERSION_TAG/g;
+      $WEB_GRID     =~ s/{LOGDIR}/$LOG_DIR/g;
+      $RUN_DIR      =~ s/{RUNROOT}/$RUN_ROOT/g;
+      $RUN_DIR      =~ s/{UTROOT}/$UT_ROOT/g;
+      $WEB_PUSH     =~ s/\|/:/g;
+      $SLURM_STDOUT =~ s/{LOGDIR}/$LOG_DIR/g;
+      $SLURM_STDOUT =~ s/{VERSION}/$VERSION/g;
+      $SLURM_STDOUT =~ s/{VERSION_TAG}/$VERSION_TAG/g;
+      $SLURM_STDERR =~ s/{LOGDIR}/$LOG_DIR/g;
+      $SLURM_STDERR =~ s/{VERSION}/$VERSION/g;
+      $SLURM_STDERR =~ s/{VERSION_TAG}/$VERSION_TAG/g;
+      
+      # Replace user token
+      $CODE_DIR     =~ s/{USER}/$user/g;
+      $RUN_ROOT     =~ s/{USER}/$user/g;
+      $RUN_DIR      =~ s/{USER}/$user/g;
+      $JOB_DIR      =~ s/{USER}/$user/g;
+      $PERL_DIR     =~ s/{USER}/$user/g;
+
+      # Make sure each of these directories exist before proceeding
+      &checkDir( $DATA_ROOT  );
+      &checkDir( $CODE_DIR   );
+      &checkDir( $JOB_DIR    );
+      &checkDir( $LOG_DIR    );
+      &checkDir( $PERL_DIR   );
+
+      # Skip over comment lines
+      while ( $txt[$i] =~ m/^\#/ ) { $i++ }
+
+      # Loop over all requested simulations
+      while ( !($txt[$i] =~ m/END/ ) ) { 
+
+        # Skip if the line only has whitespace
+	while ( $txt[$i] =~ /^\s*$/ ) { $i++; }
+     
+	# Skip lines beginning with comments
+	if ( !( $txt[$i] =~ m/^\#/ ) ) {
+
+	  #-----------------------------------------------------------------
+	  # Parse each line that specifies an individual unit test.
+	  # Remove extraneous characters wherever necessary.
+	  #-----------------------------------------------------------------
+
+	  # Parse each line into values
+	  ( $met,   $grid, $nest, $sim, 
+	    $start, $end,  $extra       ) = split( ' ', $txt[$i] );
+
+	  # Make sure met, grid, nest are in lowercase
+	  $met     =~ tr/[A-Z]/[a-z]/;
+	  $grid    =~ tr/[A-Z]/[a-z]/;
+	  $nest    =~ tr/[A-Z]/[a-z]/;
+
+	  # Remove extraneous characters from $met
+	  $met     =~ s/\-//g;
+	  $met     =~ s/\_//g;
+	  $met     =~ s/\=//g;
+	  $met     =~ s/\.//g;
+
+	  # Remove extraneous characters from $nest
+	  $nest    =~ s/\-//g;
+	  $nest    =~ s/\_//g;
+	  $nest    =~ s/\.//g;
+
+	  # Remove extraneous characters from $extra
+	  $extra   =~ s/\-//g;
+	  $extra   =~ s/\_//g;
+	  $extra   =~ s/\.//g;
+
+          # Get start date and hour
+          $yyyymmdd= substr( $start, 0, 8 );
+          $hhmm    = substr( $start, 8, 2 );
+          $hhmm   .= "00";
+	  
+	  # Define the run directory name
+	  $runDir   = &getRunDir( $met, $grid, $nest, $sim );
+	  &checkDir( $runDir );
+
+	  # Get the directory name minus the full path
+	  $notDir   = &baseName( $runDir );
+
+	  #-----------------------------------------------------------------
+	  # Create the input.geos and HEMCO_Config.rc files from templates 
+	  # in the run directory for each requested unit test.  This has
+	  # to be done first, since the unit test commands will (likely)
+	  # be executed from within a computational queue system.
+	  #-----------------------------------------------------------------
+
+	  # If $end is in YYYYMMDDhh format, then force it to be YYYYMMDDhhmm
+	  if ( length( $end ) == 10 ) { $end .= "00"; }
+
+	  # Make the input.geos and HEMCO_Config.rc file in the run directory
+	  # Returns the timestamp for the HEMCO restart file 
+	  &makeInputs( $start, $end,  $runDir, $met, $grid, $nest, $sim );
+   
+	  #-----------------------------------------------------------------
+	  # Set GEOS-Chem restart file path. A symbolic link will be created
+	  # in the run directory pointing to this restart file.
+	  #-----------------------------------------------------------------
+	  $rstRoot = "$DATA_ROOT/GEOSCHEM_RESTARTS/v2018-11/initial_GEOSChem_rst.";
+	  if ( length( $nest ) > 0 ) {
+	    $rstFile = "$rstRoot$grid\_$sim\_$nest.nc";
+	  } else {
+	    if ( ( $sim =~ m/RRTMG/ ) ) {
+	      $rstFile = "$rstRoot$grid\_tropchem.nc";
+	    } elsif ( $sim =~ m/RnPbBe/ ) {
+	      $rstFile = "$rstRoot$grid\_RnPbBePasv_72L.nc";
+	    } else {
+	      $rstFile = "$rstRoot$notDir.nc";
+	    }
+	  }
+	  if ( !( -f $rstFile ) ){
+	    print "\nFile $rstFile does not exist!\n";
+	    exit(999)
+  	  }
+
+	  #-----------------------------------------------------------------
+	  # Create the list of comamnds that will execute each requested
+	  # unit test.  Store these commands in the @cmds array.
+	  #-----------------------------------------------------------------
+
+	  # Construct the make command, for single & multi processor.
+	  # MET, GRID, NEST, START, and END are retrieved from
+	  # within Makefile using getRunInfo (ewl, 4/10/15) 
+	  $makeCmd  = "$MAKE_CMD RUN_DIR=$runDir";
+	  $makeCmd .= " SIM=$sim VERSION=$VERSION";
+	  $makeCmd .= " VERSION_TAG=$VERSION_TAG LOG_DIR=$LOG_DIR";
+	  $makeCmd .= " CODE_DIR=$CODE_DIR PERL_DIR=$PERL_DIR";
+ 
+	  # Stdout log file.  If we are using the SLURM scheduler, then
+	  # set the $stdout variable to the value in $SLURM_STDOUT.
+	  $stdout   = "$LOG_DIR/$VERSION_TAG.stdout.log";
+	  if ( length( $SLURM_STDOUT ) > 0 ) { $stdout = $SLURM_STDOUT; }
+
+	  # The main log file
+	  $logRslt  = "$LOG_DIR/$VERSION_TAG.results.log";
+	  $RESULTS  = $logRslt;
+
+	  # If necessary, also add on the nested grid flags
+	  if ( length( $nest ) > 0  ) { $makeCmd .= " NEST=$nest"; }
+	
+	  # If necessary, also add extra Makefile options that are specific 
+	  # to each simulaton.  Specify these in the "EXTRA?" column.
+	  if ( length( $extra ) > 0 ) { $makeCmd .= " $extra"; }
+
+	  # Save make commands to an array for use below.
+	  # Temporarily copy Makefile to run dir for unit test (ewl, 4/10/15)
+	  @cmds = ( @cmds, 
+		    "\n\n\# %%% $notDir %%%\n",
+		    "cp -f $RUN_ROOT/shared_inputs/Makefiles/Makefile $runDir\n",
+		    "cd $runDir >> $stdout\n\n",
+		    "cp -f input.geos.$met\_$grid\_$sim input.geos >> $stdout\n",
+		    "rm -f input.geos.$met\_$grid\_$sim >> $stdout\n",
+		    "cp -f HEMCO_Config.rc.$met\_$grid\_$sim HEMCO_Config.rc >> $stdout\n",
+		    "rm -f HEMCO_Config.rc.$met\_$grid\_$sim >> $stdout\n",
+		    "ln -sf $rstFile GEOSChem.Restart.${yyyymmdd}_${hhmm}z.nc4\n",
+ 	            "$makeCmd unittest >> $stdout\n",
+		    "rm -f Makefile\n",
+		    "rm -f GEOSChem.Restart.${yyyymmdd}_${hhmm}z.nc4\n",
+                    "\n\# %%% Create web page w/ unit test matrix %%%\n",
+                    "cd $PERL_DIR >> $stdout\n",
+                    "./gcUtWeb $RUN_ROOT $RESULTS $TXT_GRID $TEMPLATE $WEB_GRID $WEB_PUSH >>$stdout\n"
+	          );
+        }
+
+	# Increment counter
+	$i++;
+      }
+    }	
+  }
+
+  #--------------------------------------------------------------------------
+  # Write the commands archived above into the master job script.  This 
+  # script will copy UT/runs/shared_inputs/Makefiles/Makefile to the run 
+  # directory of each requested unit test to compile and run GEOS-Chem w/ 
+  # the specified options.
+  #--------------------------------------------------------------------------
+
+  # Make the 
+  @slurm = &makeSlurmTags();
+
+  # Get local time
+  $locTime = &getLocalTime();
+
+  # Make some text for the top of the log file that will hold results
+  $logHdr = "%" x 79;
+  $logTop = <<EOF;
+echo "$logHdr"                                                 >> $logRslt
+echo "%%%"                                                     >> $logRslt
+echo "%%%  GEOS-CHEM UNIT TEST RESULTS FOR: $VERSION_TAG"      >> $logRslt
+echo "%%%  job sent to queue @ $locTime"                       >> $logRslt
+echo "%%%"                                                     >> $logRslt
+echo "%%%  DESCRIPTION: $DESCRIBE"                             >> $logRslt
+echo "%%%"                                                     >> $logRslt
+echo "%%%  BUILT WITH: $MAKE_CMD"                              >> $logRslt
+echo "%%%"                                                     >> $logRslt
+echo "%%%  This is the main log file, which shows output from" >> $logRslt
+echo "%%%  each individual phase of the unit test sequence."   >> $logRslt
+echo "%%%"                                                     >> $logRslt
+echo "%%%  Log files from individual unit-test runs are also"  >> $logRslt
+echo "%%%  stored in this same directory."                     >> $logRslt
+echo "%%%"                                                     >> $logRslt
+echo "$logHdr"                                                 >> $logRslt
+EOF
+
+  # Add some more commands to the top of the job script
+  # Call gcUtWeb to generate the matrix of results as a web page
+  # NOTE: SLURM tags have to go before any other comments or text!!!
+  @cmds = ( '#!/bin/bash'."\n\n",
+            @slurm,
+            "\#"x79,
+            "\n\# Job script for unit test: $VERSION\n\# $DESCRIBE\n",
+            "\#"x79,"\n",
+            "\nset \-e\n", 
+	    "$logTop\n", 
+            @cmds );
+
+  # WRITE the make commands to a job file
+  $jobFile = "$JOB_DIR/job.$VERSION_TAG";
+  open( O, ">$jobFile" ) or die "Cannot open $jobFile!\n";
+  print O @cmds;
+  close( O );
+  chmod( 0755, $jobFile );
+
+  #--------------------------------------------------------------------------
+  # Execute the unit test master script.  This will more than likely be
+  # done in a computational queue.  
+  #
+  # FOR DEBUGGING: If the $dryRun option is set, then just generate the 
+  # master job script but do not start the unit tests.
+  #--------------------------------------------------------------------------
+
+  # Print info about the job
+  print '%%%%%%%%% GEOS-Chem UNIT TEST SIMULATION(S) %%%%%%%%%%%%%%%%%%'."\n";
+  print "\%\%\% Unit Test ID       : $VERSION_TAG\n";
+  print "\%\%\% GEOS-Chem version  : $VERSION\n";
+  print "\%\%\% Testing code in    : $CODE_DIR\n";
+  print "\%\%\% Using job file:    : $jobFile\n";
+  print "\%\%\% Log file directory : $LOG_DIR\n";
+  print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'."\n";
+
+  # Submit the job.  Send the stdout stream to $logRslt
+  # and the stderr stream to a file in the $LOG_DIR.
+  if ( ! $dryRun  ) { 
+    $cmd = "cd $LOG_DIR; $SUBMIT $jobFile\n";
+    chomp( $status = qx( $cmd ) );
+    print "$status\n";
+  }
+  				
+  # Return normally
+  return( $? );
+}
+#EOP
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: main
+#
+# !DESCRIPTION: Driver program for the gcUnitTest script.
+#\\
+#\\
+# !INTERFACE:
+#
+sub main(@) {
+#
+# !CALLING SEQUENCE:
+#  doUnitTest OPTIONS-FILENAME DRYRUN
+#
+# !REVISION HISTORY:
+#  23 May 2013 - R. Yantosca - Initial version, based on NRT-ARCTAS
+#  02 Jul 2014 - R. Yantosca - Now accepts DRYRUN argument, which will set up
+#                              input files but not submit the unit test job
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+
+  # If the user passes a filename from the command line, use it
+  # Otherwise, default to "UnitTest.input"
+  if    ( scalar( @ARGV ) == 2 ) { &doUnitTest( @ARGV               ); }
+  elsif ( scalar( @ARGV ) == 1 ) { &doUnitTest( $ARGV[0],         0 ); }
+  else                           { &doUnitTest( "UnitTest.input", 0 ); }
+
+  # Exit and pass status code back
+  return( $? );
+}
+#EOC
+#------------------------------------------------------------------------------
+
+# Call main program
+main();
+
+# Exit and pass status code back to Unix shell
+exit( $? );
+
+

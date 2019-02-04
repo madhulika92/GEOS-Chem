@@ -1,0 +1,253 @@
+#!/usr/bin/perl -w
+
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !MODULE: cleanFiles
+#
+# !DESCRIPTION: This Perl script removes all individual files from the
+#  GEOS-Chem Unit Test log directory and job directory.
+#\\
+#\\
+# !USES:
+#
+require 5.003;                 # Need this version of Perl or newer
+use strict;                    # Force IMPLICIT NONE-style declarations
+use FindBin qw/$RealBin/;      # Look for perl modules
+use lib        $RealBin;       #  in the current folder
+use UtUtils qw/&cleanDir
+               &parse/;        # Get routines from the UtUtils module
+#
+# !PUBLIC MEMBER FUNCTIONS:
+#
+# &getDirs($)
+# &cleanDir($)
+# &main(@)         
+#
+# !CALLING SEQUENCE:
+#  cleanFiles [ OPTIONS-FILENAME ]
+#
+# !REVISION HISTORY:
+#  26 Aug 2013 - R. Yantosca - Initial version
+#  28 Aug 2013 - R. Yantosca - Now reference &cleanDir from UtUtils.pm
+#  14 Jan 2016 - R. Yantosca - Use relative data paths if no argument is passed
+#EOP
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: getDefaults
+#
+# !DESCRIPTION: Reads the input file and returns the name of the directory 
+#  where log files are stored.
+#\\
+#\\
+# !INTERFACE:
+#
+sub getDirs($) {
+#
+# !INPUT PARAMETERS:
+#
+  my ( $fileName ) = @_;   # File with unit test input options
+#
+# !RETURN VALUE:
+#
+  my $jobDir       = "";    # Job script directory
+  my $logDir       = "";    # Log file directory
+  my $runDir       = "";    # Run directory
+#
+# !CALLING SEQUENCE:
+#  &getDirs( $fileName );   # Saves values to global variables
+#
+# !REVISION HISTORY:
+#  26 Aug 2013 - R. Yantosca - Initial version
+#  24 Mar 2014 - R. Yantosca - Now use $RUN_ROOT to get the root run dir
+#  13 Mar 2015 - M. Sulprizio- Now get username for file paths
+#  18 Jun 2015 - M. Sulprizio- Now use home directory for file paths
+#  13 Jan 2016 - R. Yantosca - Now look for unit test root
+#  14 Jan 2016 - R. Yantosca - Add option for returning relative data paths
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+#
+# !LOCAL VARIABLES:
+#
+  # Scalars
+  my $home   = "";
+  my $utRoot = "";
+  my $user   = "";
+
+  # Arrays
+  my @txt  = ();
+ 
+  #-------------------------------------------------------------------------
+  # If no filename is passed, return relative data paths
+  #-------------------------------------------------------------------------
+  if ( $fileName eq "RELATIVE" ) {
+    $jobDir = "../jobs";
+    $logDir = "../logs";
+    $runDir = "../runs"; 
+    return( $jobDir, $logDir, $runDir  );
+  }
+
+  #-------------------------------------------------------------------------
+  # Otherwise, read the data paths from the specified input filename
+  #-------------------------------------------------------------------------
+
+  # Read data from input file
+  open( I, "<$fileName" ) or die "Cannot open $fileName!\n";
+  chomp( @txt = <I> );
+  close( I );
+
+  # Get home directory
+  $home = $ENV{"HOME"};
+
+  # Get username
+  $user = $ENV{"USER"};
+
+  # Parse each line until we find the log directory
+  for ( my $i = 0; $i < scalar( @txt ); $i++ ) {
+    if ( $txt[$i] =~ "JOB_DIR"        ) { $jobDir = &parse( $txt[$i] ); }
+    if ( $txt[$i] =~ "LOG_DIR"        ) { $logDir = &parse( $txt[$i] ); }
+    if ( $txt[$i] =~ "RUN_ROOT"       ) { $runDir = &parse( $txt[$i] ); }
+    if ( $txt[$i] =~ "UNIT_TEST_ROOT" ) { $utRoot = &parse( $txt[$i] ); }
+  }
+
+  # Replace directory tokens
+  $utRoot =~ s/{HOME}/$home/g;
+  $jobDir =~ s/{HOME}/$home/g;
+  $logDir =~ s/{HOME}/$home/g;
+  $runDir =~ s/{HOME}/$home/g;
+  $jobDir =~ s/{UTROOT}/$utRoot/g;
+  $logDir =~ s/{UTROOT}/$utRoot/g;
+  $runDir =~ s/{UTROOT}/$utRoot/g;
+
+  # Replace user token
+  $utRoot =~ s/{USER}/$user/g;
+  $jobDir =~ s/{USER}/$user/g;
+  $logDir =~ s/{USER}/$user/g;
+  $runDir =~ s/{USER}/$user/g;
+
+  # Only get the root part of the run & log directories
+#  $runDir =~ s/{RUNDIR}//g;
+  $logDir =~ s/\/{VERSION}//g;
+
+  # Return to main program
+  return( $jobDir, $logDir, $runDir  );
+}
+#EOC
+#------------------------------------------------------------------------------
+#                  GEOS-Chem Global Chemical Transport Model                  !
+#------------------------------------------------------------------------------
+#BOP
+#
+# !IROUTINE: main
+#
+# !DESCRIPTION: Removes files from the GEOS-Chem Unit Test job script
+#  directory and log file directory.
+#\\
+#\\
+# !INTERFACE:
+#
+sub main() {
+#
+# !CALLING SEQUENCE:
+#  cleanFiles [ OPTIONS-FILENAME ]
+#
+# !REVISION HISTORY:
+#  26 Aug 2013 - R. Yantosca - Initial version
+#  03 Sep 2013 - R. Yantosca - Now do a "make fileclean" in the runs directory,
+#                              which will remove files in run subdirectories
+#  24 Mar 2014 - R. Yantosca - Add better test for directories
+#  30 Jun 2014 - R. Yantosca - Now also call the extrafileclean target in the
+#                              run directory makefiles.
+#  14 Apr 2015 - R. Yantosca - Now removes files independently of the Makefile
+#  14 Apr 2015 - R. Yantosca - Also remove lastbuild* files
+#  15 Apr 2015 - R. Yantosca - Also remove the Makefile in the run directory;
+#                              this gets copied over fresh for each unit test.
+#  16 May 2017 - R. Yantosca - Also remove core files
+#  16 Aug 2017 - R. Yantosca - Also remove *.nc4 files (new diag output
+#EOP
+#------------------------------------------------------------------------------
+#BOC
+#
+# !LOCAL VARIABLES:
+#
+  # Scalars
+  my $cmd     = "";
+  my $dir     = "";
+  my $jobDir  = "";
+  my $logDir  = "";
+  my $optFile = "";
+  my $runDir  = "";
+  my $runRoot = "";
+  my $result  = "";
+  
+  # Arrays
+  my @dirs    = ();
+
+  # If the user passes a filename from the command line, use it
+  # Otherwise, default to "UnitTest.input"
+  if ( scalar( @ARGV ) == 1 ) { $optFile = $ARGV[0];   }
+  else                        { $optFile = "RELATIVE"; }
+
+  # Get the local directories
+  ( $jobDir, $logDir, $runRoot ) = &getDirs( $optFile );
+
+  # Remove job scripts
+  &cleanDir( $jobDir );
+
+  # Remove log files
+  &cleanDir( $logDir );
+
+  # Get all of the subdirectories of $runDir
+  opendir( D, "$runRoot" ) or die "$runRoot is an invalid directory!\n";
+  chomp( @dirs = readdir( D ) );
+  closedir( D );
+
+  # Loop over all contents in the root run directory ($RUN_ROOT)
+  foreach $dir ( @dirs ) {
+
+    # Construct full path name for subdirectory $dir
+    $runDir = "$runRoot/$dir";
+
+    # Make sure each directory is a directory and not a file
+    if ( -d $runDir ) { 
+      
+      # Also Skip over . and ..
+      if ( !( $dir =~ m/^\./ ) ) {
+
+	# Skip over chem_inputs/
+	if ( !( $dir =~ m/chem_inputs/ ) ) { 
+
+	  # Remove files in each run directory ...
+	  print "==> Removing files in $runDir\n";
+	  $cmd  = "cd $runDir; ";
+	  $cmd .= "rm -f input.geos HEMCO_Config.rc HEMCO.log ";
+          $cmd .= "HEMCO_diagnostics.* HISTORY.rc Ox.mass.* Makefile ";
+          $cmd .= "lastbuild* *.sp *.mp *info.dat input.geos.g* ";
+          $cmd .= "input.geos.m* GEOSChem.Restart* core.* *.nc4 ";
+	  $cmd .= "HEMCO_Config.rc.g* HEMCO_Config.rc.m* trac_avg.*;";
+	  $cmd .= "cd ..";
+          #print "$cmd\n";
+	  qx/$cmd/;
+        }
+      }
+    }
+  }	
+
+  # Return w/ status
+  return( $? );
+}
+#EOC
+
+#------------------------------------------------------------------------------
+
+# Call main driver routine
+main();
+
+# Exit and pass status code to Unix shell
+exit( $? );
