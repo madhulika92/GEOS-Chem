@@ -35,14 +35,14 @@
 #
 # %%% Unit tester path names %%%
 #
-   UNIT_TEST_ROOT : {HOME}/GC/UT
+   UNIT_TEST_ROOT : {HOME}/GEOS-Chem/UT
    RUN_ROOT       : {UTROOT}/runs
    RUN_DIR        : {RUNROOT}/{RUNDIR}
    PERL_DIR       : {UTROOT}/perl
 #
 # %%% Target directory and copy command %%%
 # 
-   COPY_PATH      : {HOME}/GC
+   COPY_PATH      : {HOME}/GEOS-Chem
    COPY_CMD       : cp -rfL
 #
 # !RUNS:
