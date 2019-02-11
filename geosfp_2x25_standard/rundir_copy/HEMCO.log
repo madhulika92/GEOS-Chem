@@ -1,0 +1,493 @@
+-------------------------------------------------------------------------------
+Using HEMCO v2.1.010    
+-------------------------------------------------------------------------------
+Registering HEMCO species:
+Species NO
+Species O3
+Species PAN
+Species CO
+Species ALK4
+Species ISOP
+Species HNO3
+Species H2O2
+Species ACET
+Species MEK
+Species ALD2
+Species RCHO
+Species MVK
+Species MACR
+Species NPMN
+Species PPN
+Species R4N2
+Species PRPE
+Species C3H8
+Species CH2O
+Species C2H6
+Species N2O5
+Species HNO4
+Species MP
+Species DMS
+Species SO2
+Species SO4
+Species SO4s
+Species MSA
+Species NH3
+Species NH4
+Species NIT
+Species NITs
+Species BCPI
+Species OCPI
+Species BCPO
+Species OCPO
+Species DST1
+Species DST2
+Species DST3
+Species DST4
+Species SALA
+Species SALC
+Species Br2
+Species Br
+Species BrO
+Species HOBr
+Species HBr
+Species BrNO2
+Species BrNO3
+Species CHBr3
+Species CH2Br2
+Species CH3Br
+Species MPN
+Species ISOPND
+Species ISOPNB
+Species MOBA
+Species PROPNN
+Species HAC
+Species GLYC
+Species MVKN
+Species MACRN
+Species MAP
+Species NO2
+Species NO3
+Species HNO2
+Species BENZ
+Species TOLU
+Species XYLE
+Species MTPA
+Species LIMO
+Species MTPO
+Species SOAP
+Species SOAS
+Species EOH
+Species MGLY
+Species GLYX
+Species ACTA
+Species HPALD
+Species DHDN
+Species ETHLN
+Species HCOOH
+Species IEPOXA
+Species IEPOXB
+Species IEPOXD
+Species ISN1
+Species RIPA
+Species RIPB
+Species RIPD
+Species IMAE
+Species SOAIE
+Species SOAME
+Species SOAGX
+Species SOAMG
+Species LVOC
+Species LVOCOA
+Species ISN1OG
+Species ISN1OA
+Species MONITS
+Species MONITU
+Species HONIT
+Species IONITA
+Species MONITA
+Species INDIOL
+Species IPMN
+Species HC187
+Species N2O
+Species OCS
+Species CH4
+Species BrCl
+Species HCl
+Species CCl4
+Species CH3Cl
+Species CH3CCl3
+Species CFC113
+Species CFC114
+Species CFC115
+Species HCFC123
+Species HCFC141b
+Species HCFC142b
+Species CFC11
+Species CFC12
+Species HCFC22
+Species H1211
+Species H1301
+Species H2402
+Species Cl
+Species ClO
+Species HOCl
+Species ClNO3
+Species ClNO2
+Species ClOO
+Species OClO
+Species Cl2
+Species Cl2O2
+Species H2O
+Species BrSALA
+Species BrSALC
+Species CHCl3
+Species CH2Cl2
+Species CH3I
+Species CH2I2
+Species CH2ICl
+Species CH2IBr
+Species HOI
+Species I2
+Species IBr
+Species ICl
+Species I
+Species IO
+Species HI
+Species OIO
+Species INO
+Species IONO
+Species IONO2
+Species I2O2
+Species I2O3
+Species I2O4
+Species ISALA
+Species ISALC
+Species AERI
+Species pFe
+Species SESQ
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Use air-sea flux emissions (extension module)
+   - Use species:
+    - DMS          25
+    - ACET           9
+    - ALD2          11
+-------------------------------------------------------------------------------
+Use ParaNOx ship emissions (extension module)
+    - Use the following species: (MW, emitted as HEMCO ID)
+     NO  : 30.00    1
+     NO2 : 46.00   64
+     O3  : 48.00    2
+     HNO3: 63.00    7
+READ_LUT_NCFILE: Reading /home/ubuntu/ExtData/HEMCO/PARANOX/v2015-02/ship_plume_lut_02ms.nc
+READ_LUT_NCFILE: Reading /home/ubuntu/ExtData/HEMCO/PARANOX/v2015-02/ship_plume_lut_06ms.nc
+READ_LUT_NCFILE: Reading /home/ubuntu/ExtData/HEMCO/PARANOX/v2015-02/ship_plume_lut_10ms.nc
+READ_LUT_NCFILE: Reading /home/ubuntu/ExtData/HEMCO/PARANOX/v2015-02/ship_plume_lut_14ms.nc
+READ_LUT_NCFILE: Reading /home/ubuntu/ExtData/HEMCO/PARANOX/v2015-02/ship_plume_lut_18ms.nc
+-------------------------------------------------------------------------------
+Use lightning NOx emissions (extension module)
+  - Use species NO->           1
+  - Use OTD-LIS factors from file?  T
+  - Use GEOS-5 flash rates:  F
+  - Use scalar scale factor:    1.00000000
+  - Use gridded scale field: none
+     - INIT_LIGHTNOX: Reading /home/ubuntu/ExtData/HEMCO/LIGHTNOX/v2014-07/light_dist.ott2010.dat
+-------------------------------------------------------------------------------
+Use soil NOx emissions (extension module)
+    - NOx species            : NO           1
+    - NOx scale factor       :    1.00000000
+    - NOx scale field        : none
+    - Use fertilizer NOx     :  T
+    - Fertilizer scale factor:    6.8000000901520252E-003
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Use DEAD dust emissions (extension module)
+Use the following species (Name: HcoID):
+ DST1:          38
+ DST2:          39
+ DST3:          40
+ DST4:          41
+ Global mass flux tuning factor:    8.3285999999999994E-004
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+Use sea salt aerosol emissions (extension module)
+ Accumulation aerosol: SALA:          42
+  - size range       :    1.0000000000000000E-002  0.50000000000000000
+ Coarse aerosol      : SALC:          43
+  - size range       :    1.0000000000000000E-002  0.50000000000000000
+  - wind scale factor:    1.0000000000000000
+-------------------------------------------------------------------------------
+Use MEGAN biogenic emissions (extension module)
+-------------------------------------------------------------------------------
+  - This is instance            1
+ - Use the following species:
+    Isoprene   = ISOP           6
+    Acetone    = ACET           9
+    C3 Alkenes = PRPE          18
+    Ethene     = C2H4          -1
+    ALD2       = ALD2          11
+    EOH        = EOH          75
+ SOA-Precursor = SOAP          73
+   SOA-Simple  = SOAS          74
+  --> Isoprene scale factor is    1.0000000000000000
+  --> Use CO2 inhibition on isoprene option  T
+  --> Global atmospheric CO2 concentration :    390.00000000000000       ppmv
+  --> Normalize LAI by PFT:  T
+ - MEGAN monoterpene option enabled
+    CO         = CO           4
+      a-,b-pinene    = MTPA          70
+      Other monoterp.= MTPO          72
+      Limonene       = LIMO          71
+      Sesquiterpenes = SESQ         163
+-------------------------------------------------------------------------------
+Use GFED extension
+    - Use GFED-4              :  T
+    - Use daily scale factors :  F
+    - Use hourly scale factors:  F
+    - Hydrophilic OC fraction :   0.500000000
+    - Hydrophilic BC fraction :   0.200000003
+    - POG1 fraction           :   0.490000010
+    - SOAP fraction           :    1.30000003E-02
+   - Emit GFED species NO     as model species NO
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species CO     as model species CO
+      --> Will use scale factor:    1.04999995
+      --> Will use scale field : none
+   - Emit GFED species ALK4     as model species ALK4
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species ACET     as model species ACET
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species MEK     as model species MEK
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species ALD2     as model species ALD2
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species PRPE     as model species PRPE
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species C3H8     as model species C3H8
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species CH2O     as model species CH2O
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species C2H6     as model species C2H6
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species SO2     as model species SO2
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species NH3     as model species NH3
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species BC     as model species BCPO
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species BC     as model species BCPI
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species OC     as model species OCPO
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species OC     as model species OCPI
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species MTPA     as model species MTPA
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species BENZ     as model species BENZ
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species TOLU     as model species TOLU
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species XYLE     as model species XYLE
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species EOH     as model species EOH
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+   - Emit GFED species SOAP     as model species SOAP
+      --> Will use scale factor:    1.00000000
+      --> Will use scale field : none
+-------------------------------------------------------------------------------
+Use inorganic iodine emissions (extension module)
+ HOI: HOI         145
+ I2: I2         146
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2011/01/GEOSFP.20110101.CN.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: none. File: /home/ubuntu/ExtData/HEMCO/MASKS/v2018-09/USA_LANDMASK_NEI2011_0.1x0.1.20160921.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: ncdf reference year is prior to 1901 - time stamps may be wrong!
+--> LOCATION: GET_TIMEIDX (hco_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m2 m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3cld.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3cld.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3dyn.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: Pa s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3dyn.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3dyn.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3dyn.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstC.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstC.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstC.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstC.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstE.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstE.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstE.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstE.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstE.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.I3.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.I3.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+TIMEZONES (i.e. OFFSETS FROM UTC) WERE READ FROM A FILE
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2011/01/GEOSFP.20110101.CN.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: none. File: /home/ubuntu/ExtData/HEMCO/MASKS/v2018-09/USA_LANDMASK_NEI2011_0.1x0.1.20160921.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: ncdf reference year is prior to 1901 - time stamps may be wrong!
+--> LOCATION: GET_TIMEIDX (hco_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m2 m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: W m-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A1.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3cld.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3cld.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3dyn.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: Pa s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3dyn.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3dyn.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: m s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3dyn.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstC.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstC.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstC.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstC.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-2. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstE.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstE.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstE.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstE.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg m-2 s-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.A3mstE.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.I3.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: Data is treated as unitless, but file attribute suggests it is not: kg kg-1. File: /home/ubuntu/ExtData/GEOS_4x5/GEOS_FP/2016/07/GEOSFP.20160701.I3.4x5.nc
+--> LOCATION: HCOIO_READ_STD (hcoio_read_std_mod.F90)
+HEMCO WARNING: No further attempts will be made to read file: ./HEMCO_restart.$YYYY$MM$DD$HH00.nc
+--> LOCATION: HCOIO_DataRead (hcoio_dataread_mod.F90)
+TIMEZONES (i.e. OFFSETS FROM UTC) WERE READ FROM A FILE
+HEMCO WARNING: Diagnostics counter is zero - return empty array: EmisMGLY_BioBurn
+--> LOCATION: DiagnCont_PrepareOutput (hco_diagn_mod.F90)
+HEMCO WARNING: Diagnostics counter is zero - return empty array: EmisBr2_Ocean
+--> LOCATION: DiagnCont_PrepareOutput (hco_diagn_mod.F90)
+HEMCO WARNING: Diagnostics counter is zero - return empty array: EmisOCPI_Biogenic
+--> LOCATION: DiagnCont_PrepareOutput (hco_diagn_mod.F90)
+HEMCO WARNING: Diagnostics counter is zero - return empty array: EmisCO_Monoterp
+--> LOCATION: DiagnCont_PrepareOutput (hco_diagn_mod.F90)
+HEMCO WARNING: Diagnostics counter is zero - return empty array: EmisMGLY_BioBurn
+--> LOCATION: DiagnCont_PrepareOutput (hco_diagn_mod.F90)
+HEMCO WARNING: Diagnostics counter is zero - return empty array: EmisBr2_Ocean
+--> LOCATION: DiagnCont_PrepareOutput (hco_diagn_mod.F90)
+HEMCO WARNING: Diagnostics counter is zero - return empty array: EmisOCPI_Biogenic
+--> LOCATION: DiagnCont_PrepareOutput (hco_diagn_mod.F90)
+HEMCO WARNING: Diagnostics counter is zero - return empty array: EmisCO_Monoterp
+--> LOCATION: DiagnCont_PrepareOutput (hco_diagn_mod.F90)
+
+-------------------------------------------------------------------------------
+HEMCO v2.1.010 FINISHED.
+Warnings (level 1 or lower):     83
+-------------------------------------------------------------------------------
