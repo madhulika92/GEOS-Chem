@@ -1,0 +1,1 @@
+/home/ubuntu/ExtData/GEOSCHEM_RESTARTS/v2018-11/initial_GEOSChem_rst.2x25_standard.nc
